@@ -97,7 +97,7 @@ ALLOWED_NODE_CHILDREN = {
 }
 ALLOWED_CONTAINER_BY_PARENT = {
     "Shelf": {"Box", "Organizator", "InPlace"},
-    "Drawer": {"Organizator", "InPlace"},
+    "Drawer": {"Box", "Organizator", "InPlace"},
 }
 
 
