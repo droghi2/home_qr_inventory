@@ -16,28 +16,16 @@
       <div class="card">
         <div class="card-pad">
           <div class="badges breadcrumb-inline">
-            {# TOP LEVEL: Wardrobe/Cabinet first #}
             {% if top %}
               <a class="link crumb" href="/node/{{ top['id'] }}">{{ top['type'] }} — {{ top['name'] }}</a>
-              {% if top['note'] %}
-                <span class="sep">•</span>
-                <span class="note" title="{{ top['note'] }}">{{ top['note'] }}</span>
-              {% endif %}
+              {% if top['note'] %}<span class="sep">•</span><span class="note" title="{{ top['note'] }}">{{ top['note'] }}</span>{% endif %}
             {% endif %}
-
             {% if top or parent %}<span class="sep">›</span>{% endif %}
-
-            {# PARENT SHELF/DRAWER next #}
             {% if parent %}
               <a class="link crumb" href="/node/{{ parent['id'] }}">{{ parent['type'] }} — {{ parent['name'] }}</a>
-              {% if parent['note'] %}
-                <span class="sep">•</span>
-                <span class="note" title="{{ parent['note'] }}">{{ parent['note'] }}</span>
-              {% endif %}
+              {% if parent['note'] %}<span class="sep">•</span><span class="note" title="{{ parent['note'] }}">{{ parent['note'] }}</span>{% endif %}
               <span class="sep">›</span>
             {% endif %}
-
-            {# CURRENT CONTAINER TYPE pill last (Box/Organizator/In Place) #}
             <span class="pill">{{ cont['type'] }}</span>
           </div>
 
@@ -45,12 +33,21 @@
             <h2 style="margin:.3rem 0 0 0">
               {{ cont['name'] }} <span class="muted">(#{{ cont['id'] }})</span>
             </h2>
-            <form class="no-shrink" action="/container/{{ cont['id'] }}/delete" method="post"
-                  data-ctype="{{ cont['type'] }}"
-                  onsubmit="return confirmContainerDelete(this);">
-              <button class="icon-btn danger" type="submit"
-                      aria-label="Delete {{ cont['type'] }}" title="Delete {{ cont['type'] }}">🗑️</button>
-            </form>
+
+            <div class="row" style="gap:8px;">
+              <!-- Move container -->
+              <button class="icon-btn move" id="openMoveContainer" type="button" title="Move container" aria-label="Move container">
+                ⇄
+              </button>
+
+              <!-- Delete container -->
+              <form class="no-shrink" action="/container/{{ cont['id'] }}/delete" method="post"
+                    data-ctype="{{ cont['type'] }}"
+                    onsubmit="return confirmContainerDelete(this);">
+                <button class="icon-btn danger" type="submit"
+                        aria-label="Delete {{ cont['type'] }}" title="Delete {{ cont['type'] }}">🗑️</button>
+              </form>
+            </div>
           </div>
 
           {% if cont['note'] %}<div class="muted">{{ cont['note'] }}</div>{% endif %}
@@ -73,9 +70,19 @@
             <li>
               <div><strong>{{ it['name'] }}</strong> × {{ it['qty'] }}</div>
               {% if it['note'] %}<div class="muted">{{ it['note'] }}</div>{% endif %}
-              <form action="/container/{{ cont['id'] }}/items/{{ it['id'] }}/delete" method="post" style="margin-left:auto">
-                <button class="danger">Delete</button>
-              </form>
+
+              <div class="row" style="gap:8px; margin-left:auto;">
+                <!-- Move item -->
+                <button class="icon-btn move openMoveItem"
+                        type="button"
+                        data-item-id="{{ it['id'] }}"
+                        title="Move item" aria-label="Move item">⇄</button>
+
+                <!-- Delete item -->
+                <form action="/container/{{ cont['id'] }}/items/{{ it['id'] }}/delete" method="post">
+                  <button class="danger">Delete</button>
+                </form>
+              </div>
             </li>
             {% else %}
             <li class="empty">No items yet.</li>
@@ -107,7 +114,7 @@
   </aside>
 </div>
 
-<!-- Modal: Add Item (blurred overlay) -->
+<!-- Modal: Add Item -->
 <div id="addItemModal" class="modal modal-small">
   <div class="modal-content card">
     <div class="card-pad">
@@ -131,25 +138,107 @@
   </div>
 </div>
 
+<!-- Modal: Move CONTAINER -->
+<div id="moveContainerModal" class="modal modal-small">
+  <div class="modal-content card">
+    <div class="card-pad">
+      <h2 class="kicker">Move container</h2>
+      <form action="/container/{{ cont['id'] }}/move" method="post" class="stack">
+        <label>Destination (Shelf/Drawer)
+          <select name="dest_parent_id" required>
+            {% for n in move_nodes %}
+              <option value="{{ n['id'] }}">
+                {{ n['parent_name'] }}{% if n['parent_note'] %} • {{ n['parent_note'] }}{% endif %}
+                › {{ n['name'] }}{% if n['note'] %} • {{ n['note'] }}{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+
+
+
+        </label>
+        <div class="row" style="gap:8px; justify-content:flex-end;">
+          <button type="button" class="ghost" id="cancelMoveCont">Cancel</button>
+          <button class="primary" type="submit">Move</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Move ITEM -->
+<div id="moveItemModal" class="modal modal-small">
+  <div class="modal-content card">
+    <div class="card-pad">
+      <h2 class="kicker">Move item</h2>
+      <form id="moveItemForm" action="/container/{{ cont['id'] }}/items/move" method="post" class="stack">
+        <input type="hidden" name="item_id" id="moveItemId">
+        <label>Destination container
+          <select name="dest_container_id" required>
+            {% for c in move_containers %}
+              <option value="{{ c['id'] }}">
+                {% if c['top_name'] %}
+                  {{ c['top_name'] }}{% if c['top_note'] %} • {{ c['top_note'] }}{% endif %} ›
+                {% endif %}
+                {{ c['parent_name'] }}{% if c['parent_note'] %} • {{ c['parent_note'] }}{% endif %} ›
+                {{ c['type'] }} — {{ c['name'] }}{% if c['note'] %} • {{ c['note'] }}{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+
+
+
+        </label>
+        <div class="row" style="gap:8px; justify-content:flex-end;">
+          <button type="button" class="ghost" id="cancelMoveItem">Cancel</button>
+          <button class="primary" type="submit">Move</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
   function confirmContainerDelete(form){
     const t = (form.getAttribute('data-ctype') || 'container').toLowerCase();
     return confirm(`Delete this ${t} and all its items? This cannot be undone.`);
   }
 
-  // Add Item modal controls
+  // Add Item modal
   const addItemBtn   = document.getElementById('addItemBtn');
   const addItemModal = document.getElementById('addItemModal');
   const cancelItem   = document.getElementById('cancelItem');
+  if(addItemBtn){ addItemBtn.addEventListener('click', ()=> addItemModal.style.display='flex'); }
+  if(cancelItem){ cancelItem.addEventListener('click', ()=> addItemModal.style.display='none'); }
+  if(addItemModal){ addItemModal.addEventListener('click', (e)=>{ if(e.target===addItemModal) addItemModal.style.display='none'; }); }
 
-  if(addItemBtn){ addItemBtn.addEventListener('click', ()=> { addItemModal.style.display = 'flex'; }); }
-  if(cancelItem){ cancelItem.addEventListener('click', ()=> { addItemModal.style.display = 'none'; }); }
-  if(addItemModal){
-    addItemModal.addEventListener('click', (e)=>{ if(e.target === addItemModal) addItemModal.style.display='none'; });
-  }
+  // Move CONTAINER modal
+  const openMoveContainer = document.getElementById('openMoveContainer');
+  const moveContainerModal = document.getElementById('moveContainerModal');
+  const cancelMoveCont = document.getElementById('cancelMoveCont');
+  if(openMoveContainer){ openMoveContainer.addEventListener('click', ()=> moveContainerModal.style.display='flex'); }
+  if(cancelMoveCont){ cancelMoveCont.addEventListener('click', ()=> moveContainerModal.style.display='none'); }
+  if(moveContainerModal){ moveContainerModal.addEventListener('click', (e)=>{ if(e.target===moveContainerModal) moveContainerModal.style.display='none'; }); }
+
+  // Move ITEM modal (single modal, set item_id dynamically)
+  const moveItemModal = document.getElementById('moveItemModal');
+  const cancelMoveItem = document.getElementById('cancelMoveItem');
+  const moveItemId = document.getElementById('moveItemId');
+  document.querySelectorAll('.openMoveItem').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      moveItemId.value = btn.getAttribute('data-item-id');
+      moveItemModal.style.display = 'flex';
+    });
+  });
+  if(cancelMoveItem){ cancelMoveItem.addEventListener('click', ()=> moveItemModal.style.display='none'); }
+  if(moveItemModal){ moveItemModal.addEventListener('click', (e)=>{ if(e.target===moveItemModal) moveItemModal.style.display='none'; }); }
+
+  // Escape closes any modal
   window.addEventListener('keydown', (e)=>{
-    if(e.key === 'Escape' && addItemModal && addItemModal.style.display === 'flex'){
-      addItemModal.style.display = 'none';
+    if(e.key==='Escape'){
+      if(addItemModal) addItemModal.style.display='none';
+      if(moveContainerModal) moveContainerModal.style.display='none';
+      if(moveItemModal) moveItemModal.style.display='none';
     }
   });
 </script>

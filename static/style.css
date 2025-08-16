@@ -934,3 +934,40 @@ main > a.link:first-child *{ text-decoration: none !important; }
     width: 20px; height: 20px;
   }
 }
+
+
+/* Move icon styling (blue, like your theme) */
+.icon-btn.move{
+  border: 1px solid var(--line, rgba(255,255,255,.14));
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, rgba(78,161,255,.16), rgba(78,161,255,.06));
+  color: var(--accent, #4ea1ff);
+  cursor: pointer;
+}
+.icon-btn.move:hover{
+  border-color: rgba(78,161,255,.5);
+  box-shadow: 0 0 0 3px rgba(78,161,255,.22);
+}
+
+/* Modal blur already set earlier; ensure form spacing feels good */
+.modal .card .card-pad{
+  padding-bottom: 22px;
+}
+.modal .card .card-pad .kicker{ margin-bottom: 12px; }
+.modal .stack label{ display:block; }
+.modal .stack label > input,
+.modal .stack label > select{
+  margin-top: 8px;
+  padding: 10px 12px;
+}
+.modal .stack label + label{ margin-top: 12px; }
+.modal .card .card-pad .row:last-child{ margin-top: 12px; }
+
+/* Keep long breadcrumb options tidy */
+.modal select{ width:100%; max-width:100%; }
+.modal select option{
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}

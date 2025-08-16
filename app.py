@@ -550,14 +550,52 @@ def view_container(request: Request, cont_id: str):
     cur.execute("SELECT * FROM items WHERE container_id=? ORDER BY name", (cont_id,))
     items = cur.fetchall()
 
+
+
+
+
+    # --- move targets for THIS container (Shelves/Drawers that allow this type) ---
+    allowed_parent_types = [ptype for ptype, allowed in ALLOWED_CONTAINER_BY_PARENT.items() if cont["type"] in allowed]
+    move_nodes = []
+    if allowed_parent_types:
+        placeholders = ",".join("?" * len(allowed_parent_types))
+        cur.execute(f"""
+            SELECT
+                n.id, n.name, n.type, n.note AS note,                 -- target shelf/drawer + its note
+                p.name AS parent_name, p.type AS parent_type, p.note AS parent_note  -- its cabinet/wardrobe + note
+            FROM nodes n
+            LEFT JOIN nodes p ON p.id = n.parent_id
+            WHERE n.type IN ({placeholders})
+            ORDER BY COALESCE(p.name,''), n.name
+        """, allowed_parent_types)
+        move_nodes = cur.fetchall()
+
+    # --- move targets for ITEMS (all other containers) ---
+    cur.execute("""
+        SELECT
+            c.id, c.name, c.type, c.note AS note,                      -- dest container + note
+            p.name AS parent_name, p.type AS parent_type, p.note AS parent_note,  -- shelf/drawer + note
+            t.name AS top_name,  t.type AS top_type,  t.note AS top_note          -- cabinet/wardrobe + note (nullable)
+        FROM containers c
+        JOIN nodes p ON p.id = c.parent_id
+        LEFT JOIN nodes t ON t.id = p.parent_id
+        WHERE c.id != ?
+        ORDER BY COALESCE(t.name,''), COALESCE(p.name,''), c.name
+    """, (cont_id,))
+    move_containers = cur.fetchall()
+
+
+
     conn.close()
     return render(
         "container.html",
         request=request,
         cont=cont,
         items=items,
-        parent=parent,   # NEW
-        top=top,         # NEW
+        parent=parent,
+        top=top,
+        move_nodes=move_nodes,
+        move_containers=move_containers,
         title=f"{APP_TITLE} · {cont['name']}"
     )
 
@@ -638,3 +676,56 @@ def delete_container(cont_id: str):
 
     # Go back to the parent Shelf/Drawer page
     return RedirectResponse(url=f"/node/{parent_id}", status_code=303)
+
+
+from fastapi import FastAPI, Request, Form, HTTPException
+# (already imported above)
+
+@app.post("/container/{cont_id}/move")
+def move_container(cont_id: str, dest_parent_id: str = Form(...)):
+    """Move a container (Box/Organizator/InPlace) to another Shelf/Drawer."""
+    conn = get_db(); cur = conn.cursor()
+
+    # Check container
+    cur.execute("SELECT id, type FROM containers WHERE id=?", (cont_id,))
+    c = cur.fetchone()
+    if not c:
+        conn.close(); raise HTTPException(status_code=404, detail="Container not found")
+
+    # Check destination node
+    cur.execute("SELECT id, type FROM nodes WHERE id=?", (dest_parent_id,))
+    dest = cur.fetchone()
+    if not dest:
+        conn.close(); raise HTTPException(status_code=400, detail="Destination node not found")
+
+    # Enforce typing rules: container type must be allowed under destination node type
+    allowed = ALLOWED_CONTAINER_BY_PARENT.get(dest["type"], set())
+    if c["type"] not in allowed:
+        conn.close()
+        raise HTTPException(status_code=400, detail=f"{c['type']} not allowed under {dest['type']}")
+
+    # Move
+    cur.execute("UPDATE containers SET parent_id=? WHERE id=?", (dest_parent_id, cont_id))
+    conn.commit(); conn.close()
+    return RedirectResponse(url=f"/container/{cont_id}", status_code=303)
+
+
+@app.post("/container/{cont_id}/items/move")
+def move_item(cont_id: str, item_id: int = Form(...), dest_container_id: str = Form(...)):
+    """Move an item to another container."""
+    conn = get_db(); cur = conn.cursor()
+
+    # Verify item exists
+    cur.execute("SELECT id FROM items WHERE id=?", (item_id,))
+    if not cur.fetchone():
+        conn.close(); raise HTTPException(status_code=404, detail="Item not found")
+
+    # Verify dest container exists
+    cur.execute("SELECT id FROM containers WHERE id=?", (dest_container_id,))
+    if not cur.fetchone():
+        conn.close(); raise HTTPException(status_code=400, detail="Destination container not found")
+
+    # Move item
+    cur.execute("UPDATE items SET container_id=? WHERE id=?", (dest_container_id, item_id))
+    conn.commit(); conn.close()
+    return RedirectResponse(url=f"/container/{dest_container_id}", status_code=303)
