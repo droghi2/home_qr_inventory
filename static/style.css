@@ -1,0 +1,936 @@
+/* =========================
+   Dark-Blue Theme (Navy)
+   ========================= */
+:root{
+  --bg:           #0b1220;                /* page background */
+  --panel:        #0e1626;
+  --card:         #0f1b2d;                /* cards/inputs */
+  --card-2:       #112033;
+  --text:         #e6edf3;                /* primary text */
+  --muted:        #a0afc1;                /* secondary text */
+  --line:         rgba(255,255,255,.08);  /* borders */
+  --accent:       #4ea1ff;                /* electric blue */
+  --accent-weak:  rgba(78,161,255,.18);   /* focus/hover glow */
+  --radius:       12px;
+}
+
+/* Base */
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+h1,h2,h3{margin:.15rem 0}
+h1{font-size:1.6rem} h2{font-size:1.25rem} h3{font-size:1.05rem}
+
+a.link{ color: var(--accent); text-decoration: none; }
+a.link:hover{ text-decoration: underline; }
+
+.section{ margin:16px 0 }
+.subsection{ margin-top:12px }
+.row{ display:flex; align-items:center; gap:10px }
+.grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
+@media (max-width: 800px){ .grid-2{ grid-template-columns:1fr } }
+
+/* Cards & grids */
+.card{
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px rgba(0,0,0,.5);
+}
+.card-pad{ padding:16px }
+
+.cards{ list-style:none; padding:0; margin:0; display:grid; gap:12px }
+.cards.grid{ grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) }
+.subgrid{ grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) }
+.subcard .card-pad{ padding:12px }
+
+/* Badges / pills / chips */
+.badges{ display:flex; flex-wrap:wrap; gap:6px }
+.pill{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:2px 8px; font-size:12px; border-radius:999px;
+  border:1px solid var(--line);
+  color: var(--accent);
+  background: var(--card-2);
+}
+.chip{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:2px 8px; font-size:12px; border-radius:999px;
+  border:1px solid var(--line);
+  color: var(--muted);
+  background: rgba(78,161,255,.08);
+}
+.chip.accent{
+  border-color: rgba(78,161,255,.45);
+  color: var(--accent);
+  background: var(--accent-weak);
+}
+/* legacy circular counter (kept for compatibility) */
+.count{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:22px; height:22px; padding:0 6px; font-size:12px;
+  border-radius:999px; border:1px solid var(--line);
+  color: var(--muted); background: rgba(255,255,255,.04);
+}
+
+/* Typographic helpers */
+.kicker{
+  text-transform:uppercase; letter-spacing:.4px;
+  font-size:12px; color: var(--muted);
+}
+.muted{ color: var(--muted) }
+.empty{
+  color: var(--muted); padding:12px;
+  border:1px dashed var(--line); border-radius:10px;
+  background: rgba(255,255,255,.03);
+}
+.list{ list-style:none; margin:0; padding:0 }
+.list li{
+  display:flex; gap:10px; align-items:center;
+  padding:6px 0; border-bottom:1px solid var(--line)
+}
+.list li:last-child{ border-bottom:none }
+
+/* Inputs & forms */
+label{ display:block; font-size:.92rem; color: var(--muted) }
+input, select, textarea{
+  width:100%; padding:10px 12px; border-radius:10px;
+  border:1px solid var(--line); background: var(--card-2);
+  color: var(--text); outline:none;
+}
+input::placeholder, textarea::placeholder{ color: #8191a6 }
+input:focus, select:focus, textarea:focus{
+  border-color: rgba(78,161,255,.6);
+  box-shadow: 0 0 0 3px var(--accent-weak);
+}
+
+/* Buttons */
+button{
+  appearance:none; border:1px solid var(--line); background: var(--card-2);
+  color: var(--text); padding:8px 12px; border-radius:10px; cursor:pointer;
+}
+button:hover{ filter: brightness(1.05) }
+button.primary{
+  border-color: rgba(78,161,255,.45);
+  background: var(--accent);
+  color: #0b1220;
+}
+button.ghost{
+  background: transparent;
+  border:1px solid var(--line);
+  color: var(--text);
+}
+button.tiny{ padding:6px 10px; border-radius:8px }
+
+/* Icon [+] buttons */
+.icon-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:28px; height:28px; border-radius:8px;
+  border:1px solid var(--line); background: var(--card-2); color: var(--text);
+}
+.icon-btn.plus{
+  background: var(--accent); color:#0b1220;
+  border-color: rgba(78,161,255,.45);
+}
+.icon-btn.plus:hover{ filter: brightness(1.05) }
+
+/* Toolbars */
+.toolbar-mini input{ border-radius:8px; padding:8px 10px }
+
+/* Modals */
+.modal{
+  display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%;
+  background: rgba(2,8,20,.7); align-items:center; justify-content:center
+}
+.modal-content{ max-width:500px; width:90% }
+.modal-small .modal-content{ max-width:420px; width:92% }
+
+/* Footer hint (centered) */
+.site-footer, footer.section.muted{ text-align:center; margin-top:24px; color:var(--muted) }
+.site-footer .footer-note, footer.section.muted .kicker{
+  display:inline-block; margin-top:6px; font-size:12px; letter-spacing:.4px; text-transform:uppercase; opacity:.9;
+}
+
+/* QR image spacing (page-level) */
+.qr-wrap .qr-img{ margin-bottom:16px }
+
+/* Optional: tile helpers */
+.tile-title{ margin:.2rem 0 0 0 }
+.tile-type{ font-weight:600 }
+.chip.code{ font-weight:700; letter-spacing:.2px }
+
+/* Scrollbar (nice on dark) */
+::-webkit-scrollbar{ width:12px; height:12px }
+::-webkit-scrollbar-track{ background: #0c1526 }
+::-webkit-scrollbar-thumb{ background: #1a2a44; border-radius:8px; border:2px solid #0c1526 }
+::-webkit-scrollbar-thumb:hover{ background: #223a61 }
+
+
+/* --- Center the UI without touching HTML --- */
+
+/* Center the header row and the main+footer container */
+header .header-inner,
+.container{
+  max-width: 1100px;   /* tweak: 960 / 1200 if you prefer */
+  margin: 0 auto;      /* centers horizontally */
+  padding: 0 16px;     /* nice side breathing room */
+}
+
+/* Keep header bits aligned nicely */
+.header-inner .brand{ display:flex; align-items:center; gap:8px }
+.header-inner .logo{ font-size:20px; line-height:1 }
+
+/* Center the footer note */
+footer.section.muted{ text-align:center }
+footer.section.muted .kicker{
+  display:inline-block; margin-top:6px; letter-spacing:.4px; text-transform:uppercase;
+}
+
+/* Make the grids look centered within the page width */
+.cards{ justify-content: center; }
+.cards.grid, .subgrid{
+  justify-content: center;   /* center tracks when there’s extra space */
+  justify-items: stretch;    /* cards fill their track */
+  align-items: stretch;
+}
+
+/* =========================
+   Stylish Dark-Blue Polish
+   (no HTML changes needed)
+   ========================= */
+
+/* Tokens for glow & gradients */
+:root{
+  --accent-grad: linear-gradient(135deg, #6bb8ff 0%, #4ea1ff 45%, #3b7cff 100%);
+  --ring: rgba(78,161,255,.55);
+  --card-glow: 0 12px 28px rgba(8,14,26,.45);
+  --edge-glow: 0 0 0 1px rgba(78,161,255,.25) inset;
+}
+
+/* Center layout */
+header .header-inner,
+.container{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Header: glassy, sticky, subtle glow */
+header{
+  position: sticky; top: 0; z-index: 50;
+  background: linear-gradient(to bottom, rgba(11,18,32,.8), rgba(11,18,32,.55));
+  backdrop-filter: saturate(150%) blur(10px);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 6px 16px rgba(0,0,0,.35);
+}
+.header-inner .brand{ display:flex; align-items:center; gap:10px }
+.header-inner .logo{
+  width: 30px; height: 30px; display:grid; place-items:center;
+  border-radius: 8px;
+  background: var(--accent-grad);
+  color: #0b1220; font-weight: 700; box-shadow: var(--edge-glow);
+}
+
+/* Cards: soft glass, lift on hover */
+.card{
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(78,161,255,.05), transparent 40%),
+    var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.card:hover{ transform: translateY(-3px); box-shadow: var(--card-glow); border-color: rgba(78,161,255,.35) }
+.subcard .card-pad{ padding: 14px }
+
+/* Grids feel centered and balanced */
+.cards{ justify-content: center }
+.cards.grid, .subgrid{
+  justify-content: center;
+  justify-items: stretch;
+  align-items: stretch;
+  gap: 14px;
+}
+
+/* Headings: slightly brighter with accent underline */
+h2, .kicker{
+  position: relative;
+}
+h2::after{
+  content:""; position:absolute; left:0; bottom:-6px; height:2px; width:36px;
+  background: var(--accent-grad); border-radius:2px; opacity:.6;
+}
+
+/* Pills & chips: modern glass */
+.pill{
+  background: linear-gradient(180deg, var(--card-2), rgba(255,255,255,.02));
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: var(--edge-glow);
+}
+.chip{
+  background: linear-gradient(180deg, rgba(78,161,255,.10), rgba(78,161,255,.06));
+  border: 1px solid rgba(78,161,255,.22);
+  color: var(--text);
+}
+.chip.accent{
+  background: var(--accent-grad);
+  border-color: transparent;
+  color: #0b1220; font-weight: 600;
+}
+
+/* Buttons */
+button{
+  border-radius: 10px;
+  transition: transform .12s ease, box-shadow .15s ease, filter .15s ease, background .15s ease, border-color .15s ease;
+}
+button:active{ transform: translateY(1px) }
+
+button.primary{
+  background: var(--accent-grad);
+  color: #0b1220;
+  border-color: rgba(78,161,255,.5);
+  box-shadow: 0 6px 14px rgba(78,161,255,.25);
+}
+button.primary:hover{ filter: brightness(1.05) }
+
+button.ghost{
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+  border-color: rgba(255,255,255,.14);
+}
+
+.icon-btn{
+  border-radius: 10px;
+  border-color: rgba(255,255,255,.16);
+  background: var(--card-2);
+}
+.icon-btn.plus{
+  background: var(--accent-grad);
+  color: #0b1220;
+  border-color: transparent;
+  box-shadow: 0 6px 14px rgba(78,161,255,.25);
+}
+.icon-btn.plus:hover{ filter: brightness(1.06) }
+
+/* Inputs: crisp focus ring, subtle depth */
+input, select, textarea{
+  background: linear-gradient(180deg, var(--card-2), rgba(255,255,255,.01));
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 1px 0 rgba(255,255,255,.03) inset;
+}
+input:focus, select:focus, textarea:focus{
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px var(--accent-weak), 0 1px 0 rgba(255,255,255,.05) inset;
+}
+
+/* Lists & empty states */
+.list li{ border-bottom: 1px solid rgba(255,255,255,.08) }
+.empty{
+  border: 1px dashed rgba(255,255,255,.18);
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+}
+
+/* Modals: deeper blur + glow on the card */
+.modal{ background: rgba(6,12,22,.75); backdrop-filter: blur(8px) }
+.modal .card{ box-shadow: 0 18px 40px rgba(0,0,0,.6) }
+
+/* Footer: center and soften */
+footer.section.muted{ text-align:center }
+footer.section.muted .kicker{
+  display:inline-block; margin-top:8px; letter-spacing:.45px; text-transform:uppercase; opacity:.9;
+}
+
+/* Nice selection & focus */
+::selection{ background: rgba(78,161,255,.35) }
+:focus-visible{ outline: 2px solid var(--ring); outline-offset: 2px }
+
+/* Subtle hover for links */
+a.link{ position:relative }
+a.link::after{
+  content:""; position:absolute; left:0; bottom:-2px; width:0; height:2px;
+  background: var(--accent-grad); transition: width .2s ease;
+}
+a.link:hover::after{ width:100% }
+
+/* Keep the QR area tidy */
+.qr-wrap .qr-img{ margin-bottom:18px }
+
+/* ===== Pleasing gradient header (CSS-only) ===== */
+
+/* tokens */
+:root{
+  --header-grad:
+    radial-gradient(120% 180% at 0% 0%, rgba(78,161,255,.16), transparent 38%),
+    radial-gradient(120% 180% at 100% 0%, rgba(59,124,255,.12), transparent 46%),
+    linear-gradient(135deg, #0b1220 0%, #0f1c34 45%, #10223f 100%);
+}
+
+/* full-width header with gradient + glassy vibe */
+header{
+  position: sticky; top: 0; z-index: 60;
+  background: var(--header-grad);
+  backdrop-filter: saturate(160%) blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 8px 26px rgba(0,0,0,.40);
+}
+header::after{ /* soft bottom edge highlight */
+  content:""; position:absolute; left:0; right:0; bottom:-1px; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(78,161,255,.35), transparent);
+  pointer-events:none;
+}
+
+/* keep your existing structure, just enhance it */
+.header-inner{
+  display:flex; align-items:center; gap:12px;
+  min-height: 66px;
+  max-width: 1100px; margin: 0 auto; padding: 6px 16px;
+}
+
+/* brand cluster */
+.header-inner .brand{
+  display:flex; align-items:center; gap:12px;
+  font-weight: 600; letter-spacing:.2px;
+}
+
+/* emoji logo tile */
+.header-inner .logo{
+  width: 36px; height: 36px; border-radius: 10px;
+  display:grid; place-items:center;
+  background: linear-gradient(135deg, #6bb8ff 0%, #4ea1ff 45%, #3b7cff 100%);
+  color: #0b1220; font-weight: 800;
+  box-shadow:
+    0 8px 18px rgba(78,161,255,.35),
+    0 0 0 1px rgba(78,161,255,.35) inset;
+  transition: transform .18s ease, filter .18s ease;
+}
+.header-inner .logo:hover{ transform: translateY(-1px); filter: brightness(1.05); }
+
+/* brand text (the “Home QR Inventory (Typed)”) */
+.header-inner .brand > div:not(.logo){
+  font-size: 1.02rem;
+  color: var(--text);
+  text-shadow: 0 1px 0 rgba(0,0,0,.35);
+}
+
+/* right-side “private & local” */
+header .muted{
+  color: #a8b8cc;
+  opacity: .95;
+}
+
+/* optional subtle animation of the header gradient */
+@media (prefers-reduced-motion: no-preference){
+  header{
+    background-size: 140% 140%;
+    animation: headerShift 18s ease-in-out infinite;
+  }
+  @keyframes headerShift{
+    0%,100%{ background-position: 0% 0% }
+    50%{ background-position: 100% 0% }
+  }
+}
+
+/* === Remove all link underlines (including the animated one) === */
+a.link{ text-decoration: none !important; }
+a.link:hover, a.link:focus{ text-decoration: none !important; }
+a.link::after{ display: none !important; }  /* kills the fancy hover underline */
+
+/* === Nicer spacing in modals === */
+/* Give vertical rhythm to stacked fields */
+form.stack > * + *{ margin-top: 10px; }
+
+/* Extra space before the button row in modals */
+.modal form .row:last-child{ margin-top: 14px; }
+
+/* A bit more breathing room inside popup cards */
+.modal .card .card-pad{ padding: 18px 18px 22px; }
+
+/* Slightly larger buttons in popups */
+.modal .card button{ padding: 10px 14px; }
+
+/* If any button still feels tight on small screens */
+@media (max-width: 480px){
+  .modal .card button{ padding: 12px 16px; }
+}
+/* --- remove ALL underlines, including decorative ones --- */
+a, a:link, a:visited, a:hover, a:active{
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+/* if any headings inject decorative underlines, kill them */
+h1::after, h2::after, h3::after{ content: none !important; }
+
+/* extra safety: links inside cards/grids */
+.cards a, .subgrid a{ text-decoration: none !important; border: 0 !important; }
+
+
+/* Breadcrumb above Shelf/Drawer title */
+.breadcrumb{
+  margin-top: .25rem;
+  font-size: 12px;
+  letter-spacing: .2px;
+}
+.breadcrumb .sep{
+  margin: 0 .35rem;
+  color: var(--muted);
+}
+
+/* inline pill + breadcrumb */
+.breadcrumb-inline{
+  display:flex; align-items:center; flex-wrap:wrap; gap:8px;
+}
+.breadcrumb-inline .sep{ color: var(--muted); }
+.breadcrumb-inline .crumb{
+  color: var(--accent);
+  white-space: nowrap;     /* keeps it tidy; remove if you prefer wrapping */
+}
+
+
+/* inline breadcrumb + parent note */
+.breadcrumb-inline{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.breadcrumb-inline .sep{ color: var(--muted); }
+.breadcrumb-inline .note{
+  color: var(--muted); font-size: 12px;
+  max-width: 52ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* small notes on shelf/drawer tiles */
+.small-note{
+  margin-top: .25rem;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+button.danger{
+  background:#ef4444; color:#fff;
+  border:1px solid #b91c1c;
+}
+button.danger:hover{ filter:brightness(1.05) }
+
+/* keep the delete button from wrapping under the title */
+.no-shrink{ flex-shrink: 0; }
+
+/* smaller, tidy danger button for titlebar */
+button.danger.tiny{ padding:6px 10px; border-radius:8px }
+
+/* (ensure danger style exists) */
+button.danger{
+  background:#ef4444; color:#fff; border:1px solid #b91c1c;
+}
+button.danger:hover{ filter:brightness(1.05) }
+
+
+/* Keep the icon from wrapping under title */
+.no-shrink{ flex-shrink: 0; }
+
+/* Icon danger style (trash) */
+.icon-btn.danger{
+  background:#ef4444;
+  color:#fff;
+  border-color:#b91c1c;
+}
+.icon-btn.danger:hover{ filter:brightness(1.05) }
+
+/* Ensure "No items" inside container cards uses the big empty style */
+#contGrid .card .empty{
+  color: var(--muted);
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  background: rgba(255,255,255,.03);
+  font-size: 0.95rem;
+  margin-top: .35rem;
+}
+
+.breadcrumb-inline{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.breadcrumb-inline .sep{ color: var(--muted); }
+.breadcrumb-inline .crumb{ color: var(--accent); white-space: nowrap; }
+.breadcrumb-inline .note{
+  color: var(--muted); font-size: 12px;
+  max-width: 52ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+
+/* ===== Spacing polish for forms, add-item row, and popups ===== */
+
+/* 1) Labels: put space between label text and its input/select/textarea */
+.card form label{
+  display: grid;
+  gap: 10px;                 /* space between label text and control */
+}
+.card form label > input,
+.card form label > select,
+.card form label > textarea{
+  margin-top: 0;             /* gap handled by the grid above */
+}
+
+/* 2) Stacked forms (used in modals): more vertical rhythm between fields */
+form.stack > * + *{ margin-top: 14px; }   /* was 10px */
+
+/* 3) Button row inside modals: add extra top space */
+.modal form .row:last-child{ margin-top: 18px; }
+
+/* 4) Add-item section on container page:
+      more space between “Add item” and the first input row */
+.card .kicker + form.row,
+.section .kicker + form.row{
+  margin-top: 14px;
+}
+
+/* 5) Inputs feel a bit cramped? Slightly increase internal padding */
+input[type="text"],
+input[type="number"],
+input[type="search"],
+textarea,
+select{
+  padding: 10px 12px;
+}
+
+/* 6) Extra breathing room inside popup cards */
+.modal .card .card-pad{ padding: 20px 20px 24px; }
+
+
+/* === Themed dropdowns (select) to match site === */
+select{
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  background: var(--panel, #0f1c34);
+  color: var(--text, #e6eefc);
+  border: 1px solid var(--line, rgba(255,255,255,.12));
+  border-radius: 10px;
+
+  padding: 10px 40px 10px 12px;  /* room for arrow */
+  width: 100%;
+
+  /* chevron arrow (inline SVG) */
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'>\
+<path d='M6 8l4 4 4-4' fill='none' stroke='%234ea1ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  transition: border-color .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+
+select:hover{ filter: brightness(1.05); }
+select:focus{
+  outline: 0;
+  border-color: rgba(78,161,255,.55);
+  box-shadow: 0 0 0 3px rgba(78,161,255,.25);
+}
+
+select:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* Dropdown panel colors (supported on most browsers) */
+select option{
+  background: var(--panel, #0f1c34);
+  color: var(--text, #e6eefc);
+}
+
+/* Tighten label→field spacing in modals & forms (so labels don't touch inputs) */
+.card form label,
+.modal form label{
+  display: grid;
+  gap: 12px; /* space between label text and the control */
+}
+
+/* === Stylish Back button (works on every page) === */
+/* Targets the first link at the top of <main> (your Back link) */
+.container main > a.link:first-child,
+main > a.link:first-child,
+.container main > a.link:first-of-type,
+main > a.link:first-of-type{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 6px 0 14px;
+  border: 1px solid var(--line, rgba(255,255,255,.14));
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(78,161,255,.16), rgba(78,161,255,.06));
+  color: var(--accent, #4ea1ff);
+  text-decoration: none !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,.25) inset;
+  transition: transform .12s ease, box-shadow .15s ease, border-color .15s ease, filter .15s ease;
+}
+
+/* Hover/active/focus states */
+.container main > a.link:first-child:hover,
+main > a.link:first-child:hover,
+.container main > a.link:first-of-type:hover,
+main > a.link:first-of-type:hover{
+  transform: translateY(-1px);
+  border-color: rgba(78,161,255,.5);
+  box-shadow: 0 0 0 3px rgba(78,161,255,.22);
+  filter: brightness(1.05);
+}
+
+.container main > a.link:first-child:active,
+main > a.link:first-child:active,
+.container main > a.link:first-of-type:active,
+main > a.link:first-of-type:active{
+  transform: translateY(0);
+  box-shadow: 0 0 0 2px rgba(78,161,255,.18);
+}
+
+/* Make sure the arrow + text never gets underlined anywhere */
+.container main > a.link:first-child *,
+main > a.link:first-child *{ text-decoration: none !important; }
+
+/* Small screens: a bit more touch padding */
+@media (max-width: 480px){
+  .container main > a.link:first-child,
+  main > a.link:first-child,
+  .container main > a.link:first-of-type,
+  main > a.link:first-of-type{
+    padding: 10px 14px;
+    border-radius: 12px;
+  }
+}
+/* 3-column header row so title stays centered */
+.titlebar-grid{
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  margin-top: .3rem;
+}
+.titlebar-grid h2{
+  margin: 0;
+  justify-self: center;   /* stays centered even if left/right widths differ */
+}
+
+/* Back pill used inside the titlebar */
+.back-pill{
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--line, rgba(255,255,255,.14));
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(78,161,255,.16), rgba(78,161,255,.06));
+  color: var(--accent, #4ea1ff);
+  text-decoration: none !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,.25) inset;
+  transition: transform .12s ease, box-shadow .15s ease, border-color .15s ease, filter .15s ease;
+}
+.back-pill:hover{
+  transform: translateY(-1px);
+  border-color: rgba(78,161,255,.5);
+  box-shadow: 0 0 0 3px rgba(78,161,255,.22);
+  filter: brightness(1.05);
+}
+
+/* Row that places the Back pill OUTSIDE the header card, on the left */
+.header-row-outside{
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+/* Pretty Back pill (reusable) */
+.back-pill{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 12px;
+  border:1px solid var(--line, rgba(255,255,255,.14));
+  border-radius:10px;
+  background: linear-gradient(180deg, rgba(78,161,255,.16), rgba(78,161,255,.06));
+  color: var(--accent, #4ea1ff);
+  text-decoration:none !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,.25) inset;
+  transition: transform .12s ease, box-shadow .15s, border-color .15s, filter .15s;
+}
+.back-pill:hover{
+  transform: translateY(-1px);
+  border-color: rgba(78,161,255,.5);
+  box-shadow: 0 0 0 3px rgba(78,161,255,.22);
+  filter: brightness(1.05);
+}
+
+/* Mobile: stack Back above the card nicely */
+@media (max-width: 600px){
+  .header-row-outside{
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .back-pill{ justify-self: start; }
+}
+/* Back rail outside the header card */
+.header-row-outside{
+  display: grid;
+  grid-template-columns: 48px 1fr;   /* 48px rail + card */
+  gap: 12px;
+  align-items: stretch;              /* make rail match card height */
+}
+
+/* Icon-only rail */
+.back-rail{
+  align-self: stretch;               /* full height of the row */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  border: 1px solid var(--line, rgba(255,255,255,.14));
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(78,161,255,.16), rgba(78,161,255,.06));
+  color: var(--accent, #4ea1ff);
+  text-decoration: none !important;
+  box-shadow: 0 1px 0 rgba(0,0,0,.25) inset;
+  transition: transform .12s ease, box-shadow .15s ease, border-color .15s ease, filter .15s ease;
+}
+.back-rail:hover{
+  transform: translateY(-1px);
+  border-color: rgba(78,161,255,.5);
+  box-shadow: 0 0 0 3px rgba(78,161,255,.22);
+  filter: brightness(1.05);
+}
+.back-rail svg{
+  width: 22px; height: 22px;
+  display: block;
+}
+
+/* Mobile stacks nicely */
+@media (max-width: 600px){
+  .header-row-outside{ grid-template-columns: 1fr; gap: 8px; }
+  .back-rail{ width: 44px; height: 44px; align-self: start; }
+}
+/* Bigger Items header + a little bottom padding */
+.section > h2.kicker{
+  font-size: 1.18rem;   /* slightly larger */
+  font-weight: 700;
+  letter-spacing: .02em;
+  margin: 4px 0 12px;   /* extra space below the title */
+}
+
+/* Keep small kickers (toolbars/modals) unchanged */
+.toolbar-mini .kicker,
+.modal .kicker{
+  font-size: .9rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Bigger "Containers here" + a bit of space below the row */
+.row.toolbar-mini .kicker{
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+/* Nudge the + down a touch and add bottom spacing under the whole bar */
+.row.toolbar-mini{ margin-bottom: 12px; }
+.row.toolbar-mini .icon-btn.plus{ transform: translateY(1px); }
+
+/* Blur + dim overlay for modals (applies to existing modals too) */
+.modal{
+  background: rgba(9,17,35,.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* Make the Items toolbar consistent and roomy */
+.row.toolbar-mini .kicker{
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.row.toolbar-mini{ margin-bottom: 12px; }
+.row.toolbar-mini .icon-btn.plus{ transform: translateY(1px); }
+
+/* Ensure the first sections in both columns align at the very top */
+.grid-2 .col > .section:first-child{ margin-top: 0; }
+
+/* Extra breathing room at the bottom of ALL modals */
+.modal .card .card-pad{
+  padding-bottom: 20px;   /* was default; now a bit roomier */
+}
+
+/* Also give the modal's button row some top space */
+.modal .card .card-pad .row:last-child{
+  margin-top: 12px;
+}
+
+/* (Optional) Only for the Add Item modal */
+#addItemModal .card .card-pad{
+  padding-bottom: 22px;
+}
+/* Add space under the Add item title */
+#addItemModal .card .card-pad .kicker{
+  margin-bottom: 12px;
+}
+
+/* Labels stack nicely and inputs sit a bit lower than the label text */
+#addItemModal .stack label{
+  display: block;
+}
+#addItemModal .stack label > input{
+  margin-top: 8px;        /* space between "Name" and its input */
+  padding: 10px 12px;     /* comfy input padding */
+}
+
+/* Space between fields */
+#addItemModal .stack label + label{
+  margin-top: 12px;
+}
+
+/* Extra breathing room at the bottom + above buttons */
+#addItemModal .card .card-pad{
+  padding-bottom: 22px;
+}
+#addItemModal .card .card-pad .row:last-child{
+  margin-top: 12px;
+}
+/* Keep the Back rail inline with the header on mobile too */
+@media (max-width: 600px){
+  .header-row-outside{
+    grid-template-columns: 44px 1fr;  /* don't stack; keep rail + card in one row */
+    gap: 8px;
+    align-items: stretch;              /* rail matches header card height */
+  }
+  .back-rail{
+    width: 44px;
+    align-self: stretch;               /* same height as the header card */
+  }
+  .back-rail svg{
+    width: 20px; height: 20px;
+  }
+}
+/* MOBILE: keep Back rail inline AND same height as header card */
+@media (max-width: 600px){
+  .header-row-outside{
+    display: grid;
+    grid-template-columns: 44px 1fr;  /* rail + card, side-by-side */
+    gap: 8px;
+    align-items: stretch;              /* children fill row height */
+  }
+
+  /* override any earlier 44px fixed height */
+  .back-rail{
+    width: 44px;
+    height: auto !important;           /* remove fixed 44px */
+    align-self: stretch !important;    /* match card height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-block: 8px;                /* a bit of vertical breathing room */
+  }
+
+  .back-rail svg{
+    width: 20px; height: 20px;
+  }
+}

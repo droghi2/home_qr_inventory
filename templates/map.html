@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Global search (containers + items) -->
+<div class="section">
+  <form class="row" method="get" action="/" style="gap:8px;">
+    <input style="flex:1" type="text" name="q" placeholder="Search containers/items…" value="{{ q or '' }}">
+    <button class="primary">Search</button>
+  </form>
+</div>
+
+{% if q and results %}
+  <div class="section">
+    <h2 class="kicker">Search results</h2>
+    <ul class="cards grid" style="margin-top:.6rem">
+      {% for c in results %}
+      <li class="card">
+        <div class="card-pad">
+          <div class="badges"><span class="pill">{{ c['type'] }}</span></div>
+          <a class="link" href="/container/{{ c['id'] }}"><strong>{{ c['name'] }}</strong></a>
+          <div class="muted">{{ c['top_name'] or '(No top)' }} › {{ c['parent_name'] }}</div>
+
+          {% if matched_items and matched_items.get(c['id']) %}
+            <div class="section" style="margin-top:.6rem">
+              <div class="kicker">Matched items</div>
+              <ul class="list" style="margin-top:.4rem">
+                {% for it in matched_items[c['id']][:8] %}
+                <li>
+                  <div><strong>{{ it['name'] }}</strong> × {{ it['qty'] }}</div>
+                  {% if it['note'] %}<div class="muted">{{ it['note'] }}</div>{% endif %}
+                  <a class="link" style="margin-left:auto" href="/container/{{ c['id'] }}">Open</a>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% elif q %}
+  <div class="empty">No matches.</div>
+{% endif %}
+
+<!-- Top-level widget (cabinet/wardrobe tiles with counts) -->
+<div class="row" style="justify-content:space-between; align-items:center;">
+  <h2 class="kicker">Cabinets & Wardrobes</h2>
+  <button class="icon-btn plus" id="addTopBtn" title="Add top-level">+</button>
+</div>
+
+
+  <ul class="cards subgrid" id="topGrid" style="margin-top:.6rem">
+    {% for n in top %}
+    <li class="card subcard {% if loop.index0 >= 12 %}hidden-top{% endif %}" data-name="{{ (n['name'] ~ ' ' ~ n['type'])|lower }}">
+      <div class="card-pad">
+        <!-- TOP ROW: node title (link) + plus on the right -->
+        <div class="row" style="justify-content:space-between; align-items:center;">
+          <h3 class="tile-title" style="margin:.1rem 0 0 0;">
+            <a class="link" href="/node/{{ n['id'] }}">{{ n['name'] }}</a>
+          </h3>
+          <button class="icon-btn plus addChildBtn" data-parent="{{ n['id'] }}" title="Add shelf/drawer">+</button>
+        </div>
+
+        <!-- NOTE (optional) -->
+        {% if n['note'] %}
+          <div class="muted" style="margin-top:.35rem">{{ n['note'] }}</div>
+        {% endif %}
+
+        <!-- BOTTOM ROW: type + counters -->
+        <div class="badges" style="margin-top:.5rem">
+          <span class="pill">{{ n['type'] }}</span>
+          <span class="chip">Shelves: {{ shelves_count.get(n['id'], 0) }}</span>
+          <span class="chip">Drawers: {{ drawers_count.get(n['id'], 0) }}</span>
+          <span class="chip accent">Containers: {{ containers_count.get(n['id'], 0) }}</span>
+        </div>
+      </div>
+
+
+    </li>
+    {% else %}
+      <li class="empty">No top-level nodes. Add one below.</li>
+    {% endfor %}
+  </ul>
+
+  <!-- Modal: Add top-level Cabinet/Wardrobe -->
+  <div id="addTopModal" class="modal modal-small">
+    <div class="modal-content card">
+      <div class="card-pad">
+        <h2 class="kicker">New top-level</h2>
+        <form action="/nodes" method="post" class="stack">
+          <input type="hidden" name="parent_id"><!-- empty => ROOT -->
+          <label>Type
+            <select name="type">
+              <option value="Cabinet">Cabinet</option>
+              <option value="Wardrobe">Wardrobe</option>
+            </select>
+          </label>
+          <label>Name <input required name="name" placeholder="e.g., Birou Matei"></label>
+          <label>Note <input name="note" placeholder="optional"></label>
+          <div class="row" style="gap:8px; justify-content:flex-end;">
+            <button type="button" class="ghost" id="cancelTop">Cancel</button>
+            <button class="primary">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  {% if top|length > 12 %}
+    <div class="row" style="justify-content:center; margin-top:.8rem;">
+      <button class="ghost tiny" id="toggleTop">Show more</button>
+    </div>
+  {% endif %}
+</div>
+
+
+<!-- Modal: Add Shelf/Drawer under a specific top-level -->
+<div id="addChildModal" class="modal modal-small">
+  <div class="modal-content card">
+    <div class="card-pad">
+      <h2 class="kicker">New child</h2>
+      <form action="/nodes" method="post" class="stack">
+        <input type="hidden" name="parent_id" id="childParent">
+        <label>Type
+          <select name="type" id="childType">
+            <option value="Shelf">Shelf</option>
+            <option value="Drawer">Drawer</option>
+          </select>
+        </label>
+        <label>Name <input required name="name" placeholder="e.g., Top shelf"></label>
+        <label>Note <input name="note" placeholder="optional"></label>
+        <div class="row" style="gap:8px; justify-content:flex-end;">
+          <button type="button" class="ghost" id="cancelChild">Cancel</button>
+          <button class="primary">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Filter top-level tiles
+ // [+] Add top-level modal
+  const addTopBtn   = document.getElementById('addTopBtn');
+  const addTopModal = document.getElementById('addTopModal');
+  const cancelTop   = document.getElementById('cancelTop');
+  if (addTopBtn){ addTopBtn.addEventListener('click', ()=> addTopModal.style.display='flex'); }
+  if (cancelTop){ cancelTop.addEventListener('click', ()=> addTopModal.style.display='none'); }
+  if (addTopModal){ addTopModal.addEventListener('click', (e)=>{ if(e.target===addTopModal) addTopModal.style.display='none'; }); }
+  window.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ if(addTopModal) addTopModal.style.display='none'; }});
+
+  // Show more/less for top-level
+  const toggleTop = document.getElementById('toggleTop');
+  if (toggleTop){
+    let expanded = false;
+    toggleTop.addEventListener('click', ()=>{
+      expanded = !expanded;
+      document.querySelectorAll('.hidden-top').forEach(el => el.style.display = expanded ? '' : 'none');
+      toggleTop.textContent = expanded ? 'Show fewer' : 'Show more';
+    });
+    document.querySelectorAll('.hidden-top').forEach(el => el.style.display = 'none');
+  }
+
+  // Add child modal on tiles
+  const addBtns = [...document.querySelectorAll('.addChildBtn')];
+  const addChildModal = document.getElementById('addChildModal');
+  const childParent = document.getElementById('childParent');
+  const cancelChild = document.getElementById('cancelChild');
+  addBtns.forEach(btn => {
+    btn.addEventListener('click', ()=>{
+      childParent.value = btn.dataset.parent;
+      addChildModal.style.display = 'flex';
+    });
+  });
+  if (cancelChild){ cancelChild.addEventListener('click', ()=> addChildModal.style.display='none'); }
+  if (addChildModal){ addChildModal.addEventListener('click', (e)=>{ if(e.target===addChildModal) addChildModal.style.display='none'; }); }
+
+  // Escape to close
+  window.addEventListener('keydown', (e)=>{
+    if(e.key==='Escape'){ if(addChildModal) addChildModal.style.display='none'; }
+  });
+</script>
+
+{% endblock %}
