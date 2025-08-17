@@ -77,6 +77,24 @@
                         type="button"
                         data-item-id="{{ it['id'] }}"
                         title="Move item" aria-label="Move item">⇄</button>
+                <!-- Inside the <li> for each item -->
+                <div class="row" style="gap:8px; margin-left:auto;">
+                  <button class="icon-btn" type="button" title="Edit item" aria-label="Edit item"
+                          data-item-id="{{ it['id'] }}" onclick="openEditItem(this)">✎</button>
+                  <form action="/container/{{ cont['id'] }}/items/{{ it['id'] }}/delete" method="post">
+                    <button class="danger">Delete</button>
+                  </form>
+                </div>
+
+                {% set extras = item_dyn.get(it['id'], []) %}
+                {% if extras and extras|length %}
+                  <div class="badges" style="margin-top:.35rem">
+                    {% for x in extras %}
+                      <span class="chip">{{ x.label }}: {{ x.value }}</span>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+
 
                 <!-- Delete item -->
                 <form action="/container/{{ cont['id'] }}/items/{{ it['id'] }}/delete" method="post">
@@ -119,7 +137,17 @@
   <div class="modal-content card">
     <div class="card-pad">
       <h2 class="kicker">Add item</h2>
-      <form action="/container/{{ cont['id'] }}/items" method="post" class="stack">
+      <form id="addItemForm" action="/container/{{ cont['id'] }}/items" method="post" class="stack">
+        <label>Type
+          <select name="type_id" id="addTypeSelect">
+            <option value="">— none —</option>
+            {% for t in item_types %}
+              <option value="{{ t['id'] }}">{{ t['name'] }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <div id="addDynFields"></div>
+
         <label>Name
           <input required name="name" placeholder="e.g., Socks">
         </label>
@@ -137,6 +165,45 @@
     </div>
   </div>
 </div>
+
+<!-- Modal: Edit Item -->
+<div id="editItemModal" class="modal modal-small">
+  <div class="modal-content card">
+    <div class="card-pad">
+      <h2 class="kicker">Edit item</h2>
+      <form id="editItemForm" action="" method="post" class="stack">
+        <input type="hidden" id="editItemId">
+        <label>Type
+          <select name="type_id" id="editTypeSelect">
+            <option value="">— none —</option>
+            {% for t in item_types %}
+              <option value="{{ t['id'] }}">{{ t['name'] }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <div id="editDynFields"></div>
+
+        <label>Name
+          <input required name="name" id="editName">
+        </label>
+        <label>Quantity
+          <input type="number" min="1" name="qty" id="editQty">
+        </label>
+        <label>Note
+          <input name="note" id="editNote">
+        </label>
+        <div class="row" style="gap:8px; justify-content:flex-end;">
+          <button type="button" class="ghost" id="cancelEdit">Cancel</button>
+          <button class="primary" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+
+
 
 <!-- Modal: Move CONTAINER -->
 <div id="moveContainerModal" class="modal modal-small">
@@ -199,48 +266,129 @@
 </div>
 
 <script>
-  function confirmContainerDelete(form){
-    const t = (form.getAttribute('data-ctype') || 'container').toLowerCase();
-    return confirm(`Delete this ${t} and all its items? This cannot be undone.`);
+  // ---------- helpers ----------
+  async function fetchJSON(url){ const r = await fetch(url); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+
+  function renderFields(containerEl, fields, values){
+    containerEl.innerHTML = '';
+    fields.forEach(f=>{
+      const wrap = document.createElement('label');
+      wrap.textContent = f.label;
+      let input;
+      const name = 'field_' + f.id;
+      const val = values && values[f.id] !== undefined ? values[f.id] : '';
+
+      if (f.kind === 'text' || f.kind === 'date' || f.kind === 'number'){
+        input = document.createElement('input');
+        input.name = name;
+        input.type = (f.kind === 'text') ? 'text' : (f.kind === 'date' ? 'date' : 'number');
+        input.value = val;
+      } else if (f.kind === 'checkbox'){
+        input = document.createElement('input');
+        input.name = name;
+        input.type = 'checkbox';
+        input.checked = (val === '1' || val === 'true' || val === 'on');
+      } else if (f.kind === 'select'){
+        input = document.createElement('select');
+        input.name = name;
+        (f.options || []).forEach(opt=>{
+          const o = document.createElement('option');
+          o.value = opt; o.textContent = opt;
+          if (opt === val) o.selected = true;
+          input.appendChild(o);
+        });
+      }
+      if (f.required){ input.required = true; }
+      // spacing
+      input.style.marginTop = '8px';
+      input.style.padding = '10px 12px';
+      wrap.appendChild(input);
+      containerEl.appendChild(wrap);
+      const spacer = document.createElement('div'); spacer.style.height='6px'; containerEl.appendChild(spacer);
+    });
   }
 
-  // Add Item modal
+  // ---------- ADD ITEM modal ----------
   const addItemBtn   = document.getElementById('addItemBtn');
   const addItemModal = document.getElementById('addItemModal');
   const cancelItem   = document.getElementById('cancelItem');
+  const addTypeSel   = document.getElementById('addTypeSelect');
+  const addDynFields = document.getElementById('addDynFields');
+
   if(addItemBtn){ addItemBtn.addEventListener('click', ()=> addItemModal.style.display='flex'); }
   if(cancelItem){ cancelItem.addEventListener('click', ()=> addItemModal.style.display='none'); }
   if(addItemModal){ addItemModal.addEventListener('click', (e)=>{ if(e.target===addItemModal) addItemModal.style.display='none'; }); }
 
-  // Move CONTAINER modal
-  const openMoveContainer = document.getElementById('openMoveContainer');
-  const moveContainerModal = document.getElementById('moveContainerModal');
-  const cancelMoveCont = document.getElementById('cancelMoveCont');
-  if(openMoveContainer){ openMoveContainer.addEventListener('click', ()=> moveContainerModal.style.display='flex'); }
-  if(cancelMoveCont){ cancelMoveCont.addEventListener('click', ()=> moveContainerModal.style.display='none'); }
-  if(moveContainerModal){ moveContainerModal.addEventListener('click', (e)=>{ if(e.target===moveContainerModal) moveContainerModal.style.display='none'; }); }
-
-  // Move ITEM modal (single modal, set item_id dynamically)
-  const moveItemModal = document.getElementById('moveItemModal');
-  const cancelMoveItem = document.getElementById('cancelMoveItem');
-  const moveItemId = document.getElementById('moveItemId');
-  document.querySelectorAll('.openMoveItem').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      moveItemId.value = btn.getAttribute('data-item-id');
-      moveItemModal.style.display = 'flex';
+  if(addTypeSel){
+    addTypeSel.addEventListener('change', async (e)=>{
+      const tid = e.target.value;
+      if(!tid){ addDynFields.innerHTML=''; return; }
+      const fields = await fetchJSON(`/api/item-types/${tid}/fields`);
+      renderFields(addDynFields, fields, null);
     });
-  });
-  if(cancelMoveItem){ cancelMoveItem.addEventListener('click', ()=> moveItemModal.style.display='none'); }
-  if(moveItemModal){ moveItemModal.addEventListener('click', (e)=>{ if(e.target===moveItemModal) moveItemModal.style.display='none'; }); }
+  }
 
-  // Escape closes any modal
+  // ---------- EDIT ITEM modal ----------
+  const editItemModal = document.getElementById('editItemModal');
+  const cancelEdit    = document.getElementById('cancelEdit');
+  const editTypeSel   = document.getElementById('editTypeSelect');
+  const editDynFields = document.getElementById('editDynFields');
+  const editName      = document.getElementById('editName');
+  const editQty       = document.getElementById('editQty');
+  const editNote      = document.getElementById('editNote');
+  const editForm      = document.getElementById('editItemForm');
+
+  if(cancelEdit){ cancelEdit.addEventListener('click', ()=> editItemModal.style.display='none'); }
+  if(editItemModal){ editItemModal.addEventListener('click', (e)=>{ if(e.target===editItemModal) editItemModal.style.display='none'; }); }
+
+  async function openEditItem(btn){
+    const id = btn.getAttribute('data-item-id');
+    const data = await fetchJSON(`/api/items/${id}`);
+
+    // set base fields
+    editForm.action = `/container/{{ cont['id'] }}/items/${id}/update`;
+    document.getElementById('editItemId').value = id;
+    editName.value = data.item.name || '';
+    editQty.value  = data.item.qty || 1;
+    editNote.value = data.item.note || '';
+    editTypeSel.value = data.item.type_id || '';
+
+    // map dynamic values by field_id
+    const valmap = {};
+    (data.fields || []).forEach(f=>{ valmap[f.field_id] = f.value; });
+
+    if(editTypeSel.value){
+      const fields = await fetchJSON(`/api/item-types/${editTypeSel.value}/fields`);
+      renderFields(editDynFields, fields, valmap);
+    } else {
+      editDynFields.innerHTML = '';
+    }
+
+    editItemModal.style.display = 'flex';
+  }
+  window.openEditItem = openEditItem;
+
+  // change type on edit -> refetch fields
+  if(editTypeSel){
+    editTypeSel.addEventListener('change', async (e)=>{
+      const tid = e.target.value;
+      if(!tid){ editDynFields.innerHTML=''; return; }
+      const fields = await fetchJSON(`/api/item-types/${tid}/fields`);
+      renderFields(editDynFields, fields, {});
+    });
+  }
+
+  // Esc closes modals
   window.addEventListener('keydown', (e)=>{
     if(e.key==='Escape'){
       if(addItemModal) addItemModal.style.display='none';
-      if(moveContainerModal) moveContainerModal.style.display='none';
-      if(moveItemModal) moveItemModal.style.display='none';
+      if(editItemModal) editItemModal.style.display='none';
     }
   });
 </script>
+
+
+
+
 
 {% endblock %}

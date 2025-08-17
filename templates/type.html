@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Back rail + header -->
+<div class="section header-row-outside">
+  <a class="back-rail" href="/types" aria-label="Back" title="Back">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M15 18L9 12l6-6" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
+
+  <div class="card">
+    <div class="card-pad">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <h2 style="margin:.3rem 0 0 0">{{ t['name'] }}</h2>
+        <div class="row" style="gap:8px;">
+          <button class="icon-btn plus" id="addFieldBtn" title="Add field">+</button>
+          <form action="/types/{{ t['id'] }}/delete" method="post"
+                onsubmit="return confirm('Delete this type and ALL its fields?');">
+            <button class="icon-btn danger" title="Delete type" aria-label="Delete type">🗑️</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Fields -->
+<div class="section">
+  <div class="row toolbar-mini" style="justify-content:space-between; align-items:center;">
+    <div class="kicker">Fields</div>
+  </div>
+
+  <ul class="cards">
+    {% for f in fields %}
+    <li class="card">
+      <div class="card-pad">
+        <div class="field-row">
+        <form action="/fields/{{ f['id'] }}/update" method="post" class="field-grid">
+            <input type="hidden" name="type_id" value="{{ t['id'] }}">
+
+            <label class="order">
+            <span class="muted">Order</span>
+            <input type="number" name="ord" value="{{ f['ord'] }}" min="0" step="1">
+            </label>
+
+            <label class="label">
+            <span class="muted">Label</span>
+            <input required name="label" value="{{ f['label'] }}">
+            </label>
+
+            <label class="kind">
+            <span class="muted">Kind</span>
+            <select name="kind" class="kind-select">
+                <option value="text"     {% if f['kind']=='text' %}selected{% endif %}>text</option>
+                <option value="number"   {% if f['kind']=='number' %}selected{% endif %}>number</option>
+                <option value="select"   {% if f['kind']=='select' %}selected{% endif %}>select</option>
+                <option value="date"     {% if f['kind']=='date' %}selected{% endif %}>date</option>
+                <option value="checkbox" {% if f['kind']=='checkbox' %}selected{% endif %}>checkbox</option>
+            </select>
+            </label>
+
+            <label class="options opt-wrap">
+            <span class="muted">Options (comma, for select)</span>
+            <input name="options" value="{% if f['kind']=='select' and f['options'] %}{{ f['options']|join(', ') }}{% endif %}">
+            </label>
+
+            <label class="required">
+            <span class="muted">Required</span>
+            <input type="checkbox" name="required" value="1" {% if f['required'] %}checked{% endif %}>
+            </label>
+
+            <div class="actions">
+            <button class="icon-btn primary" type="submit" title="Save" aria-label="Save">💾</button>
+            </div>
+        </form>
+
+        <!-- DELETE keeps bottom-aligned on the right -->
+        <form action="/fields/{{ f['id'] }}/delete" method="post"
+                onsubmit="return confirm('Delete this field?');">
+            <input type="hidden" name="type_id" value="{{ t['id'] }}">
+            <button class="icon-btn danger" title="Delete field" aria-label="Delete field">🗑️</button>
+        </form>
+        </div>
+      </div>
+    </li>
+    {% else %}
+      <li class="card"><div class="card-pad"><div class="empty">No fields yet. Click <strong>+</strong> to add one.</div></div></li>
+    {% endfor %}
+  </ul>
+</div>
+
+<!-- Modal: Add Field -->
+<div id="addFieldModal" class="modal modal-small">
+  <div class="modal-content card">
+    <div class="card-pad">
+      <h2 class="kicker">Add field</h2>
+      <form action="/types/{{ t['id'] }}/fields" method="post" class="stack">
+        <label>Label
+          <input required name="label" placeholder="e.g., Connector type">
+        </label>
+
+        <label>Kind
+          <select name="kind" id="addKindSelect">
+            <option value="text">text</option>
+            <option value="number">number</option>
+            <option value="select">select</option>
+            <option value="date">date</option>
+            <option value="checkbox">checkbox</option>
+          </select>
+        </label>
+
+        <label id="addOptionsWrap" style="display:none;">Options (comma separated)
+          <input name="options" placeholder="e.g., USB-A, USB-C, Micro-USB">
+        </label>
+
+        <label class="stack-field" style="min-width:150px;">
+        <span>Required</span>
+        <input type="checkbox" name="required" value="1" class="chk">
+        </label>
+
+        <div class="row" style="gap:8px; justify-content:flex-end;">
+          <button type="button" class="ghost" id="cancelAddField">Cancel</button>
+          <button class="primary">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Add Field modal open/close
+  const addFieldBtn   = document.getElementById('addFieldBtn');
+  const addFieldModal = document.getElementById('addFieldModal');
+  const cancelAddField= document.getElementById('cancelAddField');
+  if(addFieldBtn){ addFieldBtn.addEventListener('click', ()=> addFieldModal.style.display='flex'); }
+  if(cancelAddField){ cancelAddField.addEventListener('click', ()=> addFieldModal.style.display='none'); }
+  if(addFieldModal){ addFieldModal.addEventListener('click', (e)=>{ if(e.target===addFieldModal) addFieldModal.style.display='none'; }); }
+
+  // Show Options only when Kind=select (Add Field modal)
+  const addKindSelect  = document.getElementById('addKindSelect');
+  const addOptionsWrap = document.getElementById('addOptionsWrap');
+  if(addKindSelect){
+    const syncAdd = ()=> addOptionsWrap.style.display = (addKindSelect.value === 'select') ? '' : 'none';
+    addKindSelect.addEventListener('change', syncAdd); syncAdd();
+  }
+
+  // Inline rows: show Options only when Kind=select
+  document.querySelectorAll('.field-row').forEach(row=>{
+    const kindSel = row.querySelector('.kind-select');
+    const optWrap = row.querySelector('.opt-wrap');
+    if(!kindSel || !optWrap) return;
+    const sync = ()=> { optWrap.style.display = (kindSel.value === 'select') ? '' : 'none'; };
+    kindSel.addEventListener('change', sync);
+    // init from current selection
+    sync();
+  });
+
+  // Esc closes modal
+  window.addEventListener('keydown', (e)=>{
+    if(e.key==='Escape'){ if(addFieldModal) addFieldModal.style.display='none'; }
+  });
+</script>
+
+{% endblock %}

@@ -3,9 +3,10 @@ import os
 import sqlite3
 from uuid import uuid4
 from pathlib import Path
-
+import re, unicodedata, json
+import json
 import qrcode
-from fastapi import FastAPI, Request, Form, HTTPException
+from fastapi import FastAPI, Request, Form, HTTPException, Body
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -15,7 +16,7 @@ import time
 from PIL import Image, ImageDraw, ImageFont
 from fastapi.responses import Response
 import io, textwrap, qrcode
-
+from fastapi.responses import JSONResponse
 
 
 APP_TITLE = "Home QR Inventory (Typed)"
@@ -74,6 +75,47 @@ def init_db():
         );
     """)
 
+
+
+    # Item types & dynamic fields (EAV style)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS item_types(
+            id TEXT PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL
+        );
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS item_fields(
+            id TEXT PRIMARY KEY,
+            type_id TEXT NOT NULL,
+            name TEXT NOT NULL,      -- machine key
+            label TEXT NOT NULL,     -- UI label
+            kind TEXT NOT NULL CHECK(kind IN ('text','number','select','date','checkbox')),
+            required INTEGER DEFAULT 0,
+            options TEXT DEFAULT '[]',  -- JSON array for 'select'
+            ord INTEGER DEFAULT 0,
+            FOREIGN KEY(type_id) REFERENCES item_types(id) ON DELETE CASCADE
+        );
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS item_field_values(
+            item_id INTEGER NOT NULL,
+            field_id TEXT NOT NULL,
+            value TEXT,
+            PRIMARY KEY (item_id, field_id),
+            FOREIGN KEY(item_id) REFERENCES items(id) ON DELETE CASCADE,
+            FOREIGN KEY(field_id) REFERENCES item_fields(id) ON DELETE CASCADE
+        );
+    """)
+
+    # Add items.type_id if missing (for item -> type link)
+    cur.execute("PRAGMA table_info(items)")
+    cols = [r[1] for r in cur.fetchall()]
+    if "type_id" not in cols:
+        cur.execute("ALTER TABLE items ADD COLUMN type_id TEXT")
+
+
+
     conn.commit(); conn.close()
 
 init_db()
@@ -99,6 +141,81 @@ ALLOWED_CONTAINER_BY_PARENT = {
     "Shelf": {"Box", "Organizator", "InPlace"},
     "Drawer": {"Box", "Organizator", "InPlace"},
 }
+
+
+
+def slugify_label(text: str) -> str:
+    text = (text or "").strip()
+    if not text:
+        return "field"
+    # normalize diacritics → ascii
+    norm = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    key = re.sub(r"[^a-zA-Z0-9]+", "_", norm).strip("_").lower()
+    return key or "field"
+
+def ensure_unique_field_key(conn, type_id: str, base_key: str, exclude_field_id: str | None = None) -> str:
+    cur = conn.cursor()
+    if exclude_field_id:
+        cur.execute("SELECT name FROM item_fields WHERE type_id=? AND id!=?", (type_id, exclude_field_id))
+    else:
+        cur.execute("SELECT name FROM item_fields WHERE type_id=?", (type_id,))
+    existing = {r["name"] for r in cur.fetchall()}
+    k, n = base_key, 2
+    while k in existing:
+        k = f"{base_key}_{n}"
+        n += 1
+    return k
+
+
+
+def list_item_types(conn):
+    cur = conn.cursor()
+    cur.execute("SELECT id, name FROM item_types ORDER BY name")
+    return cur.fetchall()
+
+def fields_for_type(conn, type_id: str):
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, name, label, kind, required, options, ord
+        FROM item_fields
+        WHERE type_id=?
+        ORDER BY ord, label
+    """, (type_id,))
+    rows = cur.fetchall()
+    # parse options JSON
+    out = []
+    for r in rows:
+        o = dict(r)
+        try:
+            o["options"] = json.loads(o["options"] or "[]")
+        except Exception:
+            o["options"] = []
+        out.append(o)
+    return out
+
+def values_for_items(conn, item_ids):
+    """Return {item_id: [{label, value, field_id}], ...}"""
+    if not item_ids: return {}
+    ph = ",".join("?" * len(item_ids))
+    cur = conn.cursor()
+    cur.execute(f"""
+        SELECT v.item_id, v.value, f.label, f.id AS field_id
+        FROM item_field_values v
+        JOIN item_fields f ON f.id = v.field_id
+        WHERE v.item_id IN ({ph})
+        ORDER BY f.ord, f.label
+    """, item_ids)
+    out = {}
+    for row in cur.fetchall():
+        out.setdefault(row["item_id"], []).append(
+            {"label": row["label"], "value": row["value"], "field_id": row["field_id"]}
+        )
+    return out
+
+
+
+
+
 
 
 def delete_node_recursive(conn, node_id: str):
@@ -546,9 +663,15 @@ def view_container(request: Request, cont_id: str):
             cur.execute("SELECT id, name, type, note FROM nodes WHERE id=?", (parent["parent_id"],))
             top = cur.fetchone()
 
-    # items inside this container
     cur.execute("SELECT * FROM items WHERE container_id=? ORDER BY name", (cont_id,))
     items = cur.fetchall()
+
+    # types for UI
+    item_types = list_item_types(conn)
+
+    # dynamic values for all items in this container
+    item_ids = [it["id"] for it in items]
+    item_dyn = values_for_items(conn, item_ids)
 
 
 
@@ -594,6 +717,8 @@ def view_container(request: Request, cont_id: str):
         items=items,
         parent=parent,
         top=top,
+        item_types=item_types,   # NEW
+        item_dyn=item_dyn,       # NEW {item_id: [{label,value}]}
         move_nodes=move_nodes,
         move_containers=move_containers,
         title=f"{APP_TITLE} · {cont['name']}"
@@ -601,14 +726,36 @@ def view_container(request: Request, cont_id: str):
 
 
 @app.post("/container/{cont_id}/items")
-def add_item(cont_id: str, name: str = Form(...), qty: int = Form(1), note: str = Form("")):
+async def add_item(cont_id: str,
+                   request: Request,
+                   name: str = Form(...),
+                   qty: int = Form(1),
+                   note: str = Form(""),
+                   type_id: str | None = Form(None)):
     conn = get_db(); cur = conn.cursor()
     cur.execute("SELECT id FROM containers WHERE id=?", (cont_id,))
     if not cur.fetchone():
         conn.close(); raise HTTPException(status_code=404, detail="Container not found")
-    cur.execute("INSERT INTO items(container_id, name, qty, note) VALUES (?, ?, ?, ?)", (cont_id, name.strip(), qty, note.strip()))
+
+    # create item
+    cur.execute("INSERT INTO items(container_id, name, qty, note, type_id) VALUES (?, ?, ?, ?, ?)",
+                (cont_id, name.strip(), qty, note.strip(), type_id))
+    item_id = cur.lastrowid
+
+    # dynamic fields (if any)
+    form = await request.form()
+    if type_id:
+        fields = fields_for_type(conn, type_id)
+        for f in fields:
+            key = f"field_{f['id']}"
+            if key in form:
+                val = str(form[key]).strip()
+                cur.execute("INSERT INTO item_field_values(item_id, field_id, value) VALUES (?, ?, ?)",
+                            (item_id, f["id"], val))
+
     conn.commit(); conn.close()
     return RedirectResponse(url=f"/container/{cont_id}", status_code=303)
+
 
 @app.post("/container/{cont_id}/items/{item_id}/delete")
 def delete_item(cont_id: str, item_id: int):
@@ -729,3 +876,207 @@ def move_item(cont_id: str, item_id: int = Form(...), dest_container_id: str = F
     cur.execute("UPDATE items SET container_id=? WHERE id=?", (dest_container_id, item_id))
     conn.commit(); conn.close()
     return RedirectResponse(url=f"/container/{dest_container_id}", status_code=303)
+
+
+
+@app.post("/container/{cont_id}/items/{item_id}/update")
+async def update_item(cont_id: str, item_id: int, request: Request,
+                      name: str = Form(...),
+                      qty: int = Form(1),
+                      note: str = Form(""),
+                      type_id: str | None = Form(None)):
+    conn = get_db(); cur = conn.cursor()
+    # verify item
+    cur.execute("SELECT id FROM items WHERE id=? AND container_id=?", (item_id, cont_id))
+    if not cur.fetchone():
+        conn.close(); raise HTTPException(status_code=404, detail="Item not found")
+
+    cur.execute("UPDATE items SET name=?, qty=?, note=?, type_id=? WHERE id=?",
+                (name.strip(), qty, note.strip(), type_id, item_id))
+
+    # wipe previous dynamic values, re-insert from form
+    cur.execute("DELETE FROM item_field_values WHERE item_id=?", (item_id,))
+    form = await request.form()
+    if type_id:
+        fields = fields_for_type(conn, type_id)
+        for f in fields:
+            key = f"field_{f['id']}"
+            if key in form:
+                val = str(form[key]).strip()
+                cur.execute("INSERT INTO item_field_values(item_id, field_id, value) VALUES (?, ?, ?)",
+                            (item_id, f["id"], val))
+
+    conn.commit(); conn.close()
+    return RedirectResponse(url=f"/container/{cont_id}", status_code=303)
+
+
+
+
+
+
+
+@app.get("/api/item-types")
+def api_item_types():
+    conn = get_db()
+    types = list_item_types(conn)
+    conn.close()
+    return JSONResponse([dict(t) for t in types])
+
+@app.get("/api/item-types/{type_id}/fields")
+def api_item_type_fields(type_id: str):
+    conn = get_db()
+    fields = fields_for_type(conn, type_id)
+    conn.close()
+    return JSONResponse(fields)
+
+@app.get("/api/items/{item_id}")
+def api_item_detail(item_id: int):
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("""
+        SELECT i.id, i.name, i.qty, i.note, i.type_id, t.name AS type_name
+        FROM items i
+        LEFT JOIN item_types t ON t.id = i.type_id
+        WHERE i.id=?
+    """, (item_id,))
+    it = cur.fetchone()
+    if not it:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Item not found")
+
+    # dynamic values
+    cur.execute("""
+        SELECT f.id AS field_id, f.label, f.kind, v.value
+        FROM item_field_values v
+        JOIN item_fields f ON f.id=v.field_id
+        WHERE v.item_id=?
+        ORDER BY f.ord, f.label
+    """, (item_id,))
+    fields = [dict(r) for r in cur.fetchall()]
+    conn.close()
+    return JSONResponse({"item": dict(it), "fields": fields})
+
+@app.get("/types", response_class=HTMLResponse)
+def types_page(request: Request):
+    conn = get_db(); cur = conn.cursor()
+    types = list_item_types(conn)
+    # For each type, list fields
+    type_fields = {}
+    for t in types:
+        type_fields[t["id"]] = fields_for_type(conn, t["id"])
+    conn.close()
+    return render("types.html", request=request, types=types, type_fields=type_fields, title=f"{APP_TITLE} · Types")
+
+@app.post("/types")
+def create_type(name: str = Form(...)):
+    conn = get_db(); cur = conn.cursor()
+    tid = uuid4().hex[:8].upper()
+    cur.execute("INSERT INTO item_types(id, name) VALUES (?, ?)", (tid, name.strip()))
+    conn.commit(); conn.close()
+    return RedirectResponse(url="/types", status_code=303)
+
+@app.post("/types/{type_id}/delete")
+def delete_type(type_id: str):
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("DELETE FROM item_types WHERE id=?", (type_id,))
+    conn.commit(); conn.close()
+    return RedirectResponse(url="/types", status_code=303)
+
+@app.post("/types/{type_id}/fields")
+def create_field(type_id: str,
+                 name: str = Form(""),
+                 label: str = Form(...),
+                 kind: str = Form(...),
+                 required: int = Form(0),
+                 options: str = Form("")):
+    if kind not in ("text","number","select","date","checkbox"):
+        raise HTTPException(status_code=400, detail="Invalid kind")
+
+    conn = get_db(); cur = conn.cursor()
+    fid = uuid4().hex[:8].upper()
+    # key: optional → auto from label if blank; always slugify + ensure unique
+    key_in = (name or "").strip()
+    base_key = slugify_label(key_in or label)
+    key = ensure_unique_field_key(conn, type_id, base_key)
+
+    # options only for select
+    opts_json = "[]"
+    if kind == "select":
+        arr = [o.strip() for o in (options or "").split(",") if o.strip()]
+        opts_json = json.dumps(arr)
+
+    # ord = biggest+1
+    cur.execute("SELECT COALESCE(MAX(ord), 0) FROM item_fields WHERE type_id=?", (type_id,))
+    ordv = (cur.fetchone()[0] or 0) + 1
+
+    cur.execute("""
+        INSERT INTO item_fields(id, type_id, name, label, kind, required, options, ord)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (fid, type_id, key, label.strip(), kind, 1 if required else 0, opts_json, ordv))
+    conn.commit(); conn.close()
+    return RedirectResponse(url=f"/types/{type_id}", status_code=303)
+
+
+
+# View a single type (detail page)
+@app.get("/types/{type_id}", response_class=HTMLResponse)
+def type_detail(request: Request, type_id: str):
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT id, name FROM item_types WHERE id=?", (type_id,))
+    t = cur.fetchone()
+    if not t:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Type not found")
+    fields = fields_for_type(conn, type_id)
+    conn.close()
+    return render("type.html", request=request, t=t, fields=fields, title=f"{APP_TITLE} · {t['name']}")
+
+# (Optional) rename a type (simple)
+@app.post("/types/{type_id}/update")
+def update_type(type_id: str, name: str = Form(...)):
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("UPDATE item_types SET name=? WHERE id=?", (name.strip(), type_id))
+    conn.commit(); conn.close()
+    return RedirectResponse(url=f"/types/{type_id}", status_code=303)
+
+# Update a field inline
+@app.post("/fields/{field_id}/update")
+def update_field(field_id: str,
+                 type_id: str = Form(...),
+                 label: str = Form(...),
+                 name: str = Form(""),
+                 kind: str = Form(...),
+                 required: int = Form(0),
+                 options: str = Form(""),
+                 ord: int = Form(0)):
+    if kind not in ("text","number","select","date","checkbox"):
+        raise HTTPException(status_code=400, detail="Invalid kind")
+
+    conn = get_db(); cur = conn.cursor()
+
+    # compute key (optional): if blank → from label; always slugify & ensure unique (excluding self)
+    key_in = (name or "").strip()
+    base_key = slugify_label(key_in or label)
+    key = ensure_unique_field_key(conn, type_id, base_key, exclude_field_id=field_id)
+
+    # options only for select
+    opts_json = "[]"
+    if kind == "select":
+        arr = [o.strip() for o in (options or "").split(",") if o.strip()]
+        opts_json = json.dumps(arr)
+
+    cur.execute("""
+        UPDATE item_fields
+           SET label=?, name=?, kind=?, required=?, options=?, ord=?
+         WHERE id=? AND type_id=?
+    """, (label.strip(), key, kind, 1 if required else 0, opts_json, ord, field_id, type_id))
+    conn.commit(); conn.close()
+    return RedirectResponse(url=f"/types/{type_id}", status_code=303)
+
+
+# Delete a field
+@app.post("/fields/{field_id}/delete")
+def delete_field(field_id: str, type_id: str = Form(...)):
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("DELETE FROM item_fields WHERE id=?", (field_id,))
+    conn.commit(); conn.close()
+    return RedirectResponse(url=f"/types/{type_id}", status_code=303)

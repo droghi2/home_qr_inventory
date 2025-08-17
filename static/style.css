@@ -971,3 +971,100 @@ main > a.link:first-child *{ text-decoration: none !important; }
   text-overflow: ellipsis;
   overflow: hidden;
 }
+
+/* Nicer wrapping for field chips inside cards */
+.cards .badges { flex-wrap: wrap; gap: 6px; }
+
+/* Stacked form field: label on top, control below (matches other inputs) */
+.stack-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Slightly larger checkbox so it aligns visually with inputs */
+.stack-field .chk {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+/* Keep labels consistent on narrow screens */
+@media (max-width: 640px) {
+  .field-row label { min-width: 150px; }
+}
+
+/* Inline field grid for perfect alignment */
+.field-row {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+
+.field-grid {
+  display: grid;
+  gap: 10px 12px;
+  align-items: end;
+  /* Order | Label | Kind | Options | Required | Save */
+  grid-template-columns: 110px minmax(220px, 1.3fr) 160px minmax(260px, 2fr) 120px auto;
+  flex: 1;
+}
+
+.field-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-grid input[type="text"],
+.field-grid input[type="number"],
+.field-grid select {
+  width: 100%;
+}
+
+.field-grid .order   { grid-column: 1; }
+.field-grid .label   { grid-column: 2; }
+.field-grid .kind    { grid-column: 3; }
+.field-grid .options { grid-column: 4; }
+.field-grid .required{ grid-column: 5; }
+.field-grid .actions { grid-column: 6; justify-self: end; }
+
+/* Hide options by default; JS will reveal for Kind=select */
+.opt-wrap { display: none; }
+
+/* Responsive: stack to 2 rows on smaller widths */
+@media (max-width: 980px) {
+  .field-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .field-grid .order    { grid-column: 1; }
+  .field-grid .label    { grid-column: 2; }
+  .field-grid .kind     { grid-column: 1; }
+  .field-grid .options  { grid-column: 2; }
+  .field-grid .required { grid-column: 1; }
+  .field-grid .actions  { grid-column: 2; justify-self: end; }
+}
+
+/* --- Align field titles in one line --- */
+.field-row { align-items: start; }      /* was end */
+.field-grid { align-items: start; }     /* was end */
+
+/* Consistent label styling (top text) */
+.field-grid label > span {
+  display: block;
+  margin-bottom: 6px;     /* same gap as other inputs */
+  font-size: .92rem;      /* same visual size as others */
+}
+
+/* Make inputs have consistent control height */
+.field-grid input[type="text"],
+.field-grid input[type="number"],
+.field-grid select {
+  height: 38px;           /* your input height */
+}
+
+/* Checkbox: nudge to align visually with the input row */
+.field-grid .required input[type="checkbox"] {
+  margin-top: 6px;        /* places it right below the title like inputs */
+  width: 1.15rem;
+  height: 1.15rem;
+}

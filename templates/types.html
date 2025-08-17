@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Back rail + header -->
+<div class="section header-row-outside">
+  <a class="back-rail" href="/" aria-label="Back" title="Back">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M15 18L9 12l6-6" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
+
+  <div class="card">
+    <div class="card-pad">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <h2 class="kicker" style="margin:0">Item Types</h2>
+        <button class="icon-btn plus" id="addTypeBtn" title="Add type">+</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Types grid -->
+<div class="section">
+  <ul class="cards subgrid">
+    {% for t in types %}
+    {% set fields = type_fields[t['id']] %}
+    <li class="card">
+      <div class="card-pad">
+
+        <!-- Title row with actions -->
+        <div class="row" style="justify-content:space-between; align-items:center;">
+            <h3 style="margin:.2rem 0 0 0">
+                <a class="link" href="/types/{{ t['id'] }}">{{ t['name'] }}</a>
+            </h3>
+          <div class="row" style="gap:8px;">
+            <button class="icon-btn plus openAddField"
+                    title="Add field"
+                    data-type-id="{{ t['id'] }}"
+                    data-type-name="{{ t['name'] }}">+</button>
+            <form action="/types/{{ t['id'] }}/delete" method="post"
+                  onsubmit="return confirm('Delete type and all its fields?');">
+              <button class="icon-btn danger" title="Delete type" aria-label="Delete type">🗑️</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Small badges row: count -->
+        <div class="badges" style="margin-top:.35rem">
+          <span class="chip">Fields: {{ fields|length }}</span>
+        </div>
+
+        <!-- Fields as chips (no options text) -->
+        <div class="badges" style="margin-top:.5rem">
+          {% for f in fields %}
+            <span class="chip{% if loop.index > 12 %} hidden-field-{{ t['id'] }}{% endif %}">
+              {{ f['label'] }} <span class="muted">({{ f['kind'] }})</span>
+            </span>
+          {% else %}
+            <span class="empty">No fields yet.</span>
+          {% endfor %}
+        </div>
+
+        <!-- Show more/less (only if many) -->
+        {% if fields|length > 12 %}
+          <div class="row" style="justify-content:center; margin-top:.6rem;">
+            <button class="ghost tiny toggleFieldsBtn" data-target="{{ t['id'] }}">Show more</button>
+          </div>
+        {% endif %}
+      </div>
+    </li>
+    {% else %}
+      <li class="card">
+        <div class="card-pad">
+          <div class="empty">No item types yet. Click <strong>+</strong> to add one.</div>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+
+<!-- Modal: Add Type -->
+<div id="addTypeModal" class="modal modal-small">
+  <div class="modal-content card">
+    <div class="card-pad">
+      <h2 class="kicker">New type</h2>
+      <form action="/types" method="post" class="stack">
+        <label>Name
+          <input required name="name" placeholder="e.g., Cable, Clothing, Game">
+        </label>
+        <div class="row" style="gap:8px; justify-content:flex-end;">
+          <button type="button" class="ghost" id="cancelAddType">Cancel</button>
+          <button class="primary">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Field (shared) -->
+<div id="addFieldModal" class="modal modal-small">
+  <div class="modal-content card">
+    <div class="card-pad">
+      <h2 class="kicker" id="addFieldTitle">Add field</h2>
+      <form id="addFieldForm" action="" method="post" class="stack">
+        <label>Label
+          <input required name="label" placeholder="e.g., Connector type">
+        </label>
+
+        <label>Kind
+          <select name="kind" id="addKindSelect">
+            <option value="text">text</option>
+            <option value="number">number</option>
+            <option value="select">select</option>
+            <option value="date">date</option>
+            <option value="checkbox">checkbox</option>
+          </select>
+        </label>
+
+        <label id="addOptionsWrap" style="display:none;">Options (comma separated)
+          <input name="options" placeholder="e.g., USB-A, USB-C, Micro-USB">
+        </label>
+
+        <label><input type="checkbox" name="required" value="1"> Required</label>
+        <div class="row" style="gap:8px; justify-content:flex-end;">
+          <button type="button" class="ghost" id="cancelAddField">Cancel</button>
+          <button class="primary">Add field</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // show/hide Options when Kind=select
+  const addKindSelect  = document.getElementById('addKindSelect');
+  const addOptionsWrap = document.getElementById('addOptionsWrap');
+  if(addKindSelect){
+    const sync = ()=> addOptionsWrap.style.display = (addKindSelect.value === 'select') ? '' : 'none';
+    addKindSelect.addEventListener('change', sync); sync();
+  }
+  // Add Type modal
+  const addTypeBtn   = document.getElementById('addTypeBtn');
+  const addTypeModal = document.getElementById('addTypeModal');
+  const cancelAddType= document.getElementById('cancelAddType');
+  if(addTypeBtn){ addTypeBtn.addEventListener('click', ()=> addTypeModal.style.display='flex'); }
+  if(cancelAddType){ cancelAddType.addEventListener('click', ()=> addTypeModal.style.display='none'); }
+  if(addTypeModal){ addTypeModal.addEventListener('click', (e)=>{ if(e.target===addTypeModal) addTypeModal.style.display='none'; }); }
+
+  // Add Field modal (shared)
+  const addFieldModal = document.getElementById('addFieldModal');
+  const addFieldForm  = document.getElementById('addFieldForm');
+  const addFieldTitle = document.getElementById('addFieldTitle');
+  const cancelAddField= document.getElementById('cancelAddField');
+
+  document.querySelectorAll('.openAddField').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const tid = btn.getAttribute('data-type-id');
+      const tname = btn.getAttribute('data-type-name') || '';
+      addFieldForm.action = `/types/${tid}/fields`;
+      addFieldTitle.textContent = `Add field to “${tname}”`;
+      addFieldModal.style.display = 'flex';
+    });
+  });
+
+  if(cancelAddField){ cancelAddField.addEventListener('click', ()=> addFieldModal.style.display='none'); }
+  if(addFieldModal){ addFieldModal.addEventListener('click', (e)=>{ if(e.target===addFieldModal) addFieldModal.style.display='none'; }); }
+
+  // Show more/less for field chips
+  document.querySelectorAll('.toggleFieldsBtn').forEach(btn=>{
+    let expanded = false;
+    const tid = btn.getAttribute('data-target');
+    const selector = `.hidden-field-${tid}`;
+    // start hidden
+    document.querySelectorAll(selector).forEach(el => el.style.display = 'none');
+    btn.addEventListener('click', ()=>{
+      expanded = !expanded;
+      document.querySelectorAll(selector).forEach(el => el.style.display = expanded ? '' : 'none');
+      btn.textContent = expanded ? 'Show fewer' : 'Show more';
+    });
+  });
+
+  // Esc closes any modal
+  window.addEventListener('keydown', (e)=>{
+    if(e.key==='Escape'){
+      if(addTypeModal) addTypeModal.style.display='none';
+      if(addFieldModal) addFieldModal.style.display='none';
+    }
+  });
+</script>
+
+{% endblock %}
