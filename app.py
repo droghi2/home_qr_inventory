@@ -1080,3 +1080,26 @@ def delete_field(field_id: str, type_id: str = Form(...)):
     cur.execute("DELETE FROM item_fields WHERE id=?", (field_id,))
     conn.commit(); conn.close()
     return RedirectResponse(url=f"/types/{type_id}", status_code=303)
+
+@app.post("/types/{type_id}/fields/reorder")
+def reorder_fields(type_id: str, payload: dict = Body(...)):
+    order = payload.get("order")
+    if not isinstance(order, list) or not all(isinstance(x, str) for x in order):
+        raise HTTPException(status_code=400, detail="Invalid order payload")
+
+    conn = get_db(); cur = conn.cursor()
+    # Only reorder fields that belong to this type (ignore stray ids)
+    qmarks = ",".join("?" * len(order)) if order else ""
+    valid = set()
+    if order:
+        cur.execute(f"SELECT id FROM item_fields WHERE type_id=? AND id IN ({qmarks})", [type_id, *order])
+        valid = {r["id"] for r in cur.fetchall()}
+
+    pos = 1
+    for fid in order:
+        if fid in valid:
+            cur.execute("UPDATE item_fields SET ord=? WHERE id=? AND type_id=?", (pos, fid, type_id))
+            pos += 1
+
+    conn.commit(); conn.close()
+    return JSONResponse({"ok": True})

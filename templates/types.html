@@ -97,17 +97,17 @@
   </div>
 </div>
 
-<!-- Modal: Add Field (shared) -->
+<!-- Modal: Add Field (shared, identical to type page) -->
 <div id="addFieldModal" class="modal modal-small">
   <div class="modal-content card">
     <div class="card-pad">
       <h2 class="kicker" id="addFieldTitle">Add field</h2>
       <form id="addFieldForm" action="" method="post" class="stack">
-        <label>Label
+        <label class="stack-field">Label
           <input required name="label" placeholder="e.g., Connector type">
         </label>
 
-        <label>Kind
+        <label class="stack-field">Kind
           <select name="kind" id="addKindSelect">
             <option value="text">text</option>
             <option value="number">number</option>
@@ -117,19 +117,26 @@
           </select>
         </label>
 
-        <label id="addOptionsWrap" style="display:none;">Options (comma separated)
+        <label class="stack-field" id="addOptionsWrap" style="display:none;">Options (comma separated)
           <input name="options" placeholder="e.g., USB-A, USB-C, Micro-USB">
         </label>
 
-        <label><input type="checkbox" name="required" value="1"> Required</label>
+        <label class="stack-field">
+          <span>Required</span>
+          <input type="checkbox" name="required" value="1" class="chk">
+        </label>
+
         <div class="row" style="gap:8px; justify-content:flex-end;">
           <button type="button" class="ghost" id="cancelAddField">Cancel</button>
-          <button class="primary">Add field</button>
+          <button class="primary">Add</button>
         </div>
       </form>
     </div>
   </div>
 </div>
+
+
+
 
 <script>
   // show/hide Options when Kind=select
@@ -163,6 +170,7 @@
     });
   });
 
+  
   if(cancelAddField){ cancelAddField.addEventListener('click', ()=> addFieldModal.style.display='none'); }
   if(addFieldModal){ addFieldModal.addEventListener('click', (e)=>{ if(e.target===addFieldModal) addFieldModal.style.display='none'; }); }
 

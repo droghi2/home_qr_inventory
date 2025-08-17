@@ -32,18 +32,21 @@
     <div class="kicker">Fields</div>
   </div>
 
-  <ul class="cards">
+  <ul class="cards fields-list">
+
     {% for f in fields %}
-    <li class="card">
-      <div class="card-pad">
+    <li class="card field-card" data-fid="{{ f['id'] }}" draggable="true">
+    <div class="card-pad">
         <div class="field-row">
+        <!-- LEFT: compact vertical stack (badge above, handle below) -->
+        <div class="order-cell">
+            <span class="order-badge" data-order="{{ f['ord'] }}">{{ f['ord'] }}</span>
+            <button type="button" class="icon-btn drag-handle" title="Drag to reorder" aria-label="Drag to reorder">⠿</button>
+        </div>
+
+        <!-- MIDDLE: edit form (unchanged fields, no Order input) -->
         <form action="/fields/{{ f['id'] }}/update" method="post" class="field-grid">
             <input type="hidden" name="type_id" value="{{ t['id'] }}">
-
-            <label class="order">
-            <span class="muted">Order</span>
-            <input type="number" name="ord" value="{{ f['ord'] }}" min="0" step="1">
-            </label>
 
             <label class="label">
             <span class="muted">Label</span>
@@ -76,15 +79,16 @@
             </div>
         </form>
 
-        <!-- DELETE keeps bottom-aligned on the right -->
+        <!-- RIGHT: delete -->
         <form action="/fields/{{ f['id'] }}/delete" method="post"
-                onsubmit="return confirm('Delete this field?');">
+                onsubmit="return confirm('Delete this field?');" class="delete-cell">
             <input type="hidden" name="type_id" value="{{ t['id'] }}">
             <button class="icon-btn danger" title="Delete field" aria-label="Delete field">🗑️</button>
         </form>
         </div>
-      </div>
+    </div>
     </li>
+
     {% else %}
       <li class="card"><div class="card-pad"><div class="empty">No fields yet. Click <strong>+</strong> to add one.</div></div></li>
     {% endfor %}
@@ -161,6 +165,289 @@
   window.addEventListener('keydown', (e)=>{
     if(e.key==='Escape'){ if(addFieldModal) addFieldModal.style.display='none'; }
   });
+
+  // Show Options only when Kind=select for inline rows
+  document.querySelectorAll('.field-card').forEach(card=>{
+    const kindSel = card.querySelector('.kind-select');
+    const optWrap = card.querySelector('.opt-wrap');
+    if(kindSel && optWrap){
+      const sync = ()=> optWrap.style.display = (kindSel.value === 'select') ? '' : 'none';
+      kindSel.addEventListener('change', sync); sync();
+    }
+  });
+
+  // Drag & drop reorder (desktop)
+  (function(){
+    const list = document.querySelector('.fields-list');
+    if(!list) return;
+    const TYPE_ID = "{{ t['id'] }}";
+
+    let dragEl = null;
+    let armDrag = false;    // only allow drag when handle pressed
+
+    // Arm dragging only when pressing the handle
+    list.addEventListener('mousedown', (e)=>{
+      if (e.target.closest('.drag-handle')) armDrag = true;
+    });
+    list.addEventListener('mouseup', ()=> armDrag = false);
+    list.addEventListener('mouseleave', ()=> armDrag = false);
+
+    list.addEventListener('dragstart', (e)=>{
+      const card = e.target.closest('.field-card');
+      if(!card) return e.preventDefault();
+      if(!armDrag) return e.preventDefault();     // must start from handle
+      dragEl = card;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      // FF needs data
+      e.dataTransfer.setData('text/plain', card.dataset.fid);
+      // Optional: smaller ghost
+      // const img = new Image(); img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBA=='; e.dataTransfer.setDragImage(img, 0, 0);
+    });
+
+    list.addEventListener('dragend', ()=>{
+      if(dragEl){ dragEl.classList.remove('dragging'); dragEl = null; }
+      armDrag = false;
+      persistOrder();
+    });
+
+    list.addEventListener('dragover', (e)=>{
+      if(!dragEl) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const after = getDragAfterElement(list, e.clientY);
+      if(after == null) list.appendChild(dragEl);
+      else list.insertBefore(dragEl, after);
+    });
+
+    function getDragAfterElement(container, y){
+      const els = [...container.querySelectorAll('.field-card:not(.dragging)')];
+      let closest = {offset: Number.NEGATIVE_INFINITY, element: null};
+      for(const el of els){
+        const box = el.getBoundingClientRect();
+        const offset = y - (box.top + box.height/2);
+        if(offset < 0 && offset > closest.offset){
+          closest = {offset, element: el};
+        }
+      }
+      return closest.element;
+    }
+
+    async function persistOrder(){
+      const ids = [...list.querySelectorAll('.field-card')].map(li => li.dataset.fid);
+      // update badges immediately
+      [...list.querySelectorAll('.field-card .order-badge')].forEach((b,i)=>{
+        b.textContent = i+1; b.setAttribute('data-order', i+1);
+      });
+      try{
+        await fetch(`/types/${TYPE_ID}/fields/reorder`, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({order: ids})
+        });
+      }catch(e){
+        console.warn('Reorder failed', e);
+      }
+    }
+  })();
+
+
+</script>
+<script>
+/* ---------- Mobile (touch) drag & drop reorder via Pointer Events ---------- */
+(function(){
+  const list = document.querySelector('.fields-list');
+  if(!list) return;
+
+  // Only enable when device uses coarse pointer (touch) — keeps desktop DnD unchanged
+  const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  if (!isTouch) return;
+
+  const TYPE_ID = "{{ t['id'] }}";
+
+  let dragging = null;       // the .field-card being moved
+  let placeholder = null;    // spacer element in the list
+  let startY = 0, offsetY = 0;
+
+  list.addEventListener('pointerdown', (e)=>{
+    const handle = e.target.closest('.drag-handle');
+    if(!handle) return;
+    window._autoScrollStart && window._autoScrollStart(e.clientY);   // <— add
+    const card = handle.closest('.field-card');
+    if(!card) return;
+
+
+
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+
+    // Prepare placeholder same height as card
+    const rect = card.getBoundingClientRect();
+    placeholder = document.createElement('li');
+    placeholder.className = 'card field-card placeholder';
+    placeholder.style.height = rect.height + 'px';
+
+    // Insert placeholder after the card and float the card
+    card.classList.add('touch-dragging');
+    card.style.width = rect.width + 'px';
+    card.style.position = 'fixed';
+    card.style.left = rect.left + 'px';
+    card.style.top  = rect.top  + 'px';
+    card.style.zIndex = 1000;
+    card.style.pointerEvents = 'none';
+
+    card.after(placeholder);
+
+    dragging = card;
+    startY = e.clientY;
+    offsetY = e.clientY - rect.top;
+
+    // Listen on the list so we can move while finger drags
+    list.addEventListener('pointermove', onMove);
+    list.addEventListener('pointerup', onUp, { once:true });
+    list.addEventListener('pointercancel', onUp, { once:true });
+  });
+
+  function onMove(e){
+    if(!dragging) return;
+    e.preventDefault();
+
+    window._autoScrollUpdate && window._autoScrollUpdate(e.clientY); // <— add
+
+
+    // Move the floating card
+    const newTop = e.clientY - offsetY;
+    dragging.style.top = newTop + 'px';
+
+    // Find insert position for placeholder
+    const after = getAfterElement(list, e.clientY);
+    if(after == null) list.appendChild(placeholder);
+    else list.insertBefore(placeholder, after);
+  }
+
+  async function onUp(e){
+    // Drop: put the card where the placeholder is
+    if(dragging && placeholder){
+      placeholder.replaceWith(dragging);
+      dragging.classList.remove('touch-dragging');
+      Object.assign(dragging.style, {position:'', left:'', top:'', width:'', zIndex:'', pointerEvents:''});
+      window._autoScrollStop && window._autoScrollStop(); 
+    }
+
+    dragging = null;
+    placeholder = null;
+
+    list.removeEventListener('pointermove', onMove);
+
+    // Persist new order
+    const ids = [...list.querySelectorAll('.field-card')].map(li => li.dataset.fid);
+    // Update badges immediately
+    [...list.querySelectorAll('.field-card .order-badge')].forEach((b,i)=>{
+      b.textContent = i+1; b.setAttribute('data-order', i+1);
+    });
+    try{
+      await fetch(`/types/${TYPE_ID}/fields/reorder`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({order: ids})
+      });
+    }catch(err){
+      console.warn('Reorder failed', err);
+    }
+  }
+
+  // Find the element that should come after the dragged card based on pointer Y
+  function getAfterElement(container, y){
+    const els = [...container.querySelectorAll('.field-card:not(.touch-dragging)')];
+    let closest = {offset: Number.NEGATIVE_INFINITY, el: null};
+    for(const el of els){
+      const box = el.getBoundingClientRect();
+      const offset = y - (box.top + box.height/2);
+      if(offset < 0 && offset > closest.offset){
+        closest = {offset, el};
+      }
+    }
+    return closest.el;
+  }
+})();
+</script>
+<script>
+/* ===== Auto-scroll while reordering (desktop + mobile) ===== */
+(function(){
+  const list = document.querySelector('.fields-list');
+  if(!list) return;
+
+  // Find scrollable container; fall back to window
+  function getScrollParent(el){
+    let p = el.parentElement;
+    while(p){
+      const s = getComputedStyle(p);
+      const canScroll = /(auto|scroll)/.test(s.overflowY) && p.scrollHeight > p.clientHeight;
+      if(canScroll) return p;
+      p = p.parentElement;
+    }
+    return window;
+  }
+
+  const scrollEl = getScrollParent(list);
+  let rafId = null;
+  let lastClientY = null;
+
+  function step(){
+    rafId = requestAnimationFrame(step);
+    if(lastClientY == null) return;
+
+    const EDGE = 80;         // px from top/bottom to start autoscroll
+    const MAX = 18;          // max px per frame (~1080px/s @60fps)
+
+    const rect = (scrollEl === window)
+      ? { top: 0, bottom: innerHeight }
+      : scrollEl.getBoundingClientRect();
+
+    let speed = 0;
+    const distTop    = lastClientY - rect.top;
+    const distBottom = rect.bottom - lastClientY;
+
+    if (distTop < EDGE) {
+      speed = -((EDGE - distTop) / EDGE) * MAX;
+    } else if (distBottom < EDGE) {
+      speed =  ((EDGE - distBottom) / EDGE) * MAX;
+    }
+
+    if (Math.abs(speed) > 0.2) {
+      if (scrollEl === window) window.scrollBy(0, speed);
+      else scrollEl.scrollTop += speed;
+
+      // While scrolling on touch, keep placeholder position in sync
+      if (typeof window._touchRepositionPlaceholder === 'function') {
+        window._touchRepositionPlaceholder(lastClientY);
+      }
+    }
+  }
+
+  function startAutoScroll(y){
+    lastClientY = y;
+    if(rafId == null) rafId = requestAnimationFrame(step);
+  }
+  function updateAutoScroll(y){ lastClientY = y; }
+  function stopAutoScroll(){
+    lastClientY = null;
+    if(rafId != null){ cancelAnimationFrame(rafId); rafId = null; }
+  }
+
+  // Desktop HTML5 DnD: track pointer Y during dragover
+  document.addEventListener('dragover', (e)=>{
+    if(!e.target.closest('.fields-list')) return;
+    startAutoScroll(e.clientY);
+  }, {passive:false});
+  document.addEventListener('dragend', stopAutoScroll);
+  document.addEventListener('drop',    stopAutoScroll);
+
+  // Expose for touch fallback script
+  window._autoScrollStart  = startAutoScroll;
+  window._autoScrollUpdate = updateAutoScroll;
+  window._autoScrollStop   = stopAutoScroll;
+})();
 </script>
 
 {% endblock %}
