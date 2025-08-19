@@ -67,41 +67,56 @@
         <div class="card-pad">
           <ul class="list">
             {% for it in items %}
-            <li>
-              <div><strong>{{ it['name'] }}</strong> × {{ it['qty'] }}</div>
-              {% if it['note'] %}<div class="muted">{{ it['note'] }}</div>{% endif %}
+              <li class="item-row">
+                <div class="item-main">
+                  <div class="title"><strong>{{ it['name'] }}</strong> × {{ it['qty'] }}</div>
+                  {% if it['note'] %}<div class="muted">{{ it['note'] }}</div>{% endif %}
 
-              <div class="row" style="gap:8px; margin-left:auto;">
-                <!-- Move item -->
-                <button class="icon-btn move openMoveItem"
-                        type="button"
-                        data-item-id="{{ it['id'] }}"
-                        title="Move item" aria-label="Move item">⇄</button>
-                <!-- Inside the <li> for each item -->
-                <div class="row" style="gap:8px; margin-left:auto;">
-                  <button class="icon-btn" type="button" title="Edit item" aria-label="Edit item"
-                          data-item-id="{{ it['id'] }}" onclick="openEditItem(this)">✎</button>
-                  <form action="/container/{{ cont['id'] }}/items/{{ it['id'] }}/delete" method="post">
-                    <button class="danger">Delete</button>
-                  </form>
-                </div>
+                  {% set extras = item_dyn.get(it['id'], []) %}
+                  {% if extras and extras|length %}
+                  <div class="extras-wrap">
+                    <div class="badges extras-inline {% if extras|length > 4 %}collapsible{% endif %}"
+                        id="extras-{{ it['id'] }}">
+                      {% for x in extras %}
+                        <span class="pill">{{ x.label }}: {{ x.value }}</span>
+                      {% endfor %}
+                    </div>
 
-                {% set extras = item_dyn.get(it['id'], []) %}
-                {% if extras and extras|length %}
-                  <div class="badges" style="margin-top:.35rem">
-                    {% for x in extras %}
-                      <span class="chip">{{ x.label }}: {{ x.value }}</span>
-                    {% endfor %}
+                    {% if extras|length > 4 %}
+                      <button type="button"
+                              class="icon-btn extras-more-btn count-btn"
+                              data-target="extras-{{ it['id'] }}"
+                              aria-label="Show {{ extras|length - 4 }} more"
+                              title="Show {{ extras|length - 4 }} more">
+                        ⋯ <span class="more-count">+{{ extras|length - 4 }}</span>
+                      </button>
+                    {% endif %}
                   </div>
-                {% endif %}
+
+                  {% endif %}
+                </div>  <!-- ← close .item-main here -->
+
+                <!-- Actions must be a sibling so they can live top-right -->
+                <div class="item-actions">
+                  <div class="actions-top">
+                    <button class="icon-btn move openMoveItem"
+                            type="button"
+                            data-item-id="{{ it['id'] }}"
+                            title="Move item" aria-label="Move item">⇄</button>
+
+                    <form action="/container/{{ cont['id'] }}/items/{{ it['id'] }}/delete"
+                          method="post"
+                          onsubmit="return confirm('Delete this item?');">
+                      <button class="icon-btn danger" title="Delete item" aria-label="Delete item">🗑️</button>
+                    </form>
+                  </div>
+
+                  <button class="icon-btn edit-btn" type="button" title="Edit item" aria-label="Edit item"
+                          data-item-id="{{ it['id'] }}" onclick="openEditItem(this)">✎</button>
+                </div>
+              </li>
 
 
-                <!-- Delete item -->
-                <form action="/container/{{ cont['id'] }}/items/{{ it['id'] }}/delete" method="post">
-                  <button class="danger">Delete</button>
-                </form>
-              </div>
-            </li>
             {% else %}
             <li class="empty">No items yet.</li>
             {% endfor %}
@@ -266,6 +281,72 @@
 </div>
 
 <script>
+
+
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.extras-more-btn');
+  if(!btn) return;
+
+  const id   = btn.dataset.target;
+  const grid = document.getElementById(id);
+  if(!grid) return;
+
+  const total  = grid.querySelectorAll('.pill').length;
+  const hidden = Math.max(0, total - 4);
+
+  const expanded = grid.classList.toggle('expanded');
+
+  if(expanded){
+    btn.setAttribute('aria-label','Show less');
+    btn.setAttribute('title','Show less');
+    btn.innerHTML = '– <span class="more-count">less</span>';
+  }else{
+    btn.setAttribute('aria-label', `Show ${hidden} more`);
+    btn.setAttribute('title',      `Show ${hidden} more`);
+    btn.innerHTML = `⋯ <span class="more-count">+${hidden}</span>`;
+  }
+});
+
+
+
+    // === MOVE CONTAINER modal ===
+  (function(){
+    const btn   = document.getElementById('openMoveContainer');
+    const modal = document.getElementById('moveContainerModal');
+    const cancel= document.getElementById('cancelMoveCont');
+    if(!modal) return;
+
+    if(btn)     btn.addEventListener('click', ()=> modal.style.display='flex');
+    if(cancel)  cancel.addEventListener('click', ()=> modal.style.display='none');
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) modal.style.display='none'; });
+  })();
+
+  // === MOVE ITEM modal ===
+  (function(){
+    const modal   = document.getElementById('moveItemModal');
+    const cancel  = document.getElementById('cancelMoveItem');
+    const hiddenId= document.getElementById('moveItemId');
+    if(!modal) return;
+
+    document.querySelectorAll('.openMoveItem').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        if(hiddenId) hiddenId.value = btn.getAttribute('data-item-id');
+        modal.style.display = 'flex';
+      });
+    });
+
+    if(cancel)  cancel.addEventListener('click', ()=> modal.style.display='none');
+    modal.addEventListener('click', (e)=>{ if(e.target===modal) modal.style.display='none'; });
+  })();
+
+  // === ESC closes all modals (add, edit, move item, move container) ===
+  window.addEventListener('keydown', (e)=>{
+    if(e.key !== 'Escape') return;
+    ['addItemModal','editItemModal','moveContainerModal','moveItemModal'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.style.display='none';
+    });
+  });
   // ---------- helpers ----------
   async function fetchJSON(url){ const r = await fetch(url); if(!r.ok) throw new Error(await r.text()); return r.json(); }
 

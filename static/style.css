@@ -1633,3 +1633,782 @@ main > a.link:first-child *{ text-decoration: none !important; }
   min-height:56px;
 }
 .drag-handle{ touch-action: none; } /* avoids page scrolling while dragging */
+/* === Types > Fields: sane, full-width rows that don't overflow === */
+
+/* Make the fields list a single full-width column (not centered, not squished) */
+.cards.fields-list{
+  display: grid;
+  grid-template-columns: 1fr;        /* one column, full width */
+  justify-content: stretch !important;
+  justify-items: stretch !important;
+  align-items: stretch !important;
+  width: 100%;
+}
+
+/* Each field card stretches across the column */
+.cards.fields-list > li.card{
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Row = [ form (with order/drag inside) | delete ] */
+.field-row{
+  display: grid;
+  grid-template-columns: 1fr auto;   /* editor grows; delete stays tight */
+  gap: 12px;
+  align-items: start;
+}
+
+/* Editor grid (inside <form class="field-grid">) */
+.field-grid{
+  display: grid;
+  /*  Order+Drag | Label | Kind | Options | Required | Save  */
+  grid-template-columns:
+    max-content
+    minmax(220px, 1.4fr)
+    150px
+    minmax(240px, 1.8fr)
+    120px
+    auto;
+  gap: 10px 12px;
+  align-items: end;
+}
+
+/* Put each piece in its column */
+.field-grid .order-cell   { grid-column: 1; }
+.field-grid .label        { grid-column: 2; }
+.field-grid .kind         { grid-column: 3; }
+.field-grid .options      { grid-column: 4; }
+.field-grid .required     { grid-column: 5; }
+.field-grid .actions      { grid-column: 6; justify-self: end; }
+
+/* Inputs/labels can shrink; no overflow */
+.field-grid label{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+.field-grid input[type="text"],
+.field-grid input[type="number"],
+.field-grid select{ width:100%; min-width:0; }
+
+/* Order badge + drag handle (tidy sizes) */
+.order-cell{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+.order-badge{
+  display:inline-grid; place-items:center;
+  width: 32px; height: 32px;
+  border-radius:999px;
+  background: rgba(37,99,235,.12);
+  color:#2563eb; font-weight:700; font-variant-numeric:tabular-nums;
+}
+.drag-handle{
+  width:32px; height:32px; cursor:grab; line-height:1;
+}
+
+/* Hide Options unless kind=select (JS toggles .opt-wrap display) */
+.opt-wrap{ display:none; }
+
+/* Delete button column aligns with bottom of form on desktop */
+.delete-cell{ align-self:end; }
+
+/* --- Responsive collapses --- */
+@media (max-width: 1100px){
+  .field-grid{
+    grid-template-columns:
+      max-content 1fr 150px 1fr auto;  /* drop explicit 'Required' width */
+  }
+  .field-grid .required{ grid-column:auto; }
+}
+
+@media (max-width: 980px){
+  .field-row{ grid-template-columns: 1fr auto; }
+  .field-grid{
+    grid-template-columns: 1fr 1fr;    /* two rows */
+    gap: 10px;
+  }
+  .field-grid .order-cell{ grid-column: 1; }
+  .field-grid .label     { grid-column: 1 / -1; } /* label full width */
+  .field-grid .kind      { grid-column: 1; }
+  .field-grid .options   { grid-column: 2; }
+  .field-grid .required  { grid-column: 1; }
+  .field-grid .actions   { grid-column: 2; justify-self:end; }
+}
+
+@media (max-width: 640px){
+  .field-grid{
+    grid-template-columns: 1fr;        /* stack nicely on phones */
+  }
+  .field-grid .label,
+  .field-grid .kind,
+  .field-grid .options,
+  .field-grid .required,
+  .field-grid .actions{ grid-column: 1; }
+  .delete-cell{ justify-self: end; }
+}
+
+/* Ensure card padding gives controls breathing room */
+.field-card .card-pad{ padding: 16px; }
+/* ===== Mobile: inline actions next to Label (≤640px) ===== */
+@media (max-width: 640px){
+
+  /* Field card layout reset */
+  .cards.fields-list .field-card .card-pad{
+    padding: 14px !important;
+  }
+  .cards.fields-list .field-row{
+    display: block !important;   /* inner form handles the grid */
+  }
+
+  /* Editor grid: [order/drag] [label] [actions] all on one row */
+  .cards.fields-list .field-grid{
+    display: grid !important;
+    grid-template-columns: 44px 1fr auto !important;
+    grid-auto-rows: auto;
+    gap: 10px !important;
+    align-items: end !important;
+  }
+
+  /* Cells on row 1 */
+  .cards.fields-list .field-grid .order-cell{ grid-column:1; grid-row:1; align-self:center; }
+  .cards.fields-list .field-grid .label     { grid-column:2; grid-row:1; }
+  .cards.fields-list .field-grid .actions   {
+    grid-column:3; grid-row:1;
+    align-self:center; justify-self:end;
+    display:flex; gap:8px;
+  }
+
+  /* Hide advanced fields by default */
+  .cards.fields-list .field-grid .kind,
+  .cards.fields-list .field-grid .options,
+  .cards.fields-list .field-grid .required{ display:none !important; }
+
+  /* When More is opened, show advanced fields stacked below, full width */
+  .cards.fields-list .field-grid.show-extras .kind,
+  .cards.fields-list .field-grid.show-extras .options,
+  .cards.fields-list .field-grid.show-extras .required{
+    display:flex !important;
+    flex-direction: column;
+    gap: 6px;
+    grid-column: 1 / -1;   /* span all three columns */
+  }
+
+  /* Tappable sizes */
+  .cards.fields-list .order-badge{ width:34px; height:34px; }
+  .cards.fields-list .drag-handle{ width:34px; height:34px; cursor:grab; }
+
+  /* Inputs */
+  .cards.fields-list .field-grid input[type="text"],
+  .cards.fields-list .field-grid input[type="number"],
+  .cards.fields-list .field-grid select{
+    height: 40px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Action buttons (More/Save/Delete) */
+  .cards.fields-list .field-grid .actions .icon-btn{
+    width: 36px; height: 36px; padding: 0;
+  }
+  .icon-btn.more{
+    border: 1px solid var(--line, rgba(255,255,255,.14));
+    border-radius: 8px;
+    background: linear-gradient(180deg, rgba(78,161,255,.16), rgba(78,161,255,.06));
+    color: var(--accent, #4ea1ff);
+  }
+  .icon-btn.more[aria-expanded="true"]{
+    box-shadow: 0 0 0 3px rgba(78,161,255,.22);
+    filter: brightness(1.05);
+  }
+
+  /* Delete form sits inline inside .actions on mobile — remove default margins */
+  .cards.fields-list .field-grid .actions form{ margin: 0; }
+}
+/* ---- Mobile fix: keep More · Save · Delete inline, no overlap ---- */
+@media (max-width: 640px){
+  /* Actions row = flex */
+  .cards.fields-list .field-grid .actions{
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    justify-self: end;
+    flex-wrap: nowrap;           /* don't wrap over label */
+  }
+
+  /* When delete form is inside actions, cancel the absolute pin */
+  .cards.fields-list .field-grid .actions .delete-cell{
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Consistent button sizes in the actions row */
+  .cards.fields-list .field-grid .actions .icon-btn,
+  .cards.fields-list .field-grid .actions .delete-cell .icon-btn{
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+  }
+}
+
+/* Optional: on very narrow phones, shrink icons a touch so all 3 fit neatly */
+@media (max-width: 360px){
+  .cards.fields-list .field-grid .actions .icon-btn{
+    width: 32px !important;
+    height: 32px !important;
+  }
+}
+/* --- Mobile: put More · Save · Delete at the TOP, not centered --- */
+@media (max-width: 640px){
+  /* Make the row two columns: Label | Actions */
+  .cards.fields-list .field-grid{
+    grid-template-columns: 1fr auto !important;
+    align-items: start !important;        /* all cells align to top */
+  }
+
+  .cards.fields-list .field-grid .label{ grid-column: 1; }
+
+  .cards.fields-list .field-grid .actions{
+    grid-column: 2;
+    justify-self: end;
+    align-self: start !important;         /* stick to top edge */
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    flex-wrap: nowrap;
+  }
+
+  /* If delete button was absolutely positioned before, neutralize it */
+  .cards.fields-list .field-grid .actions .delete-cell{
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Keep icon sizes consistent */
+  .cards.fields-list .field-grid .actions .icon-btn{
+    width: 36px; height: 36px; padding: 0;
+  }
+
+  /* In case label input added extra top margin */
+  .cards.fields-list .field-grid .label input{
+    margin-top: 0 !important;
+  }
+}
+/* === Mobile: no overlap — rail lives inside the grid === */
+@media (max-width: 640px){
+  /* Compact 3-column grid: [rail] [Label] [Actions] */
+  .cards.fields-list .field-grid{
+    display: grid !important;
+    grid-template-columns: 48px 1fr auto !important;  /* rail | label | buttons */
+    gap: 8px 10px !important;
+    align-items: start !important;
+    margin-left: 0 !important;   /* undo any previous left margin hacks */
+  }
+
+  /* Put pieces in the right columns */
+  .cards.fields-list .field-grid .order-cell{ 
+    grid-column: 1 !important; 
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .cards.fields-list .field-grid .label{ grid-column: 2 !important; }
+  .cards.fields-list .field-grid .actions{
+    grid-column: 3 !important;
+    justify-self: end; align-self: start !important;
+    display: flex; gap: 8px;
+  }
+
+  /* Hide the advanced fields on phones (toggled via “More”) */
+  .cards.fields-list .field-grid .kind,
+  .cards.fields-list .field-grid .options,
+  .cards.fields-list .field-grid .required{
+    display: none !important;
+  }
+
+  /* No need for big top padding anymore */
+  .cards.fields-list .field-card .card-pad{
+    padding-top: 16px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Comfortable, consistent rail sizes */
+  .cards.fields-list .order-badge{ width: 40px; height: 40px; font-size: 1rem; }
+  .cards.fields-list .drag-handle{ width: 40px; height: 40px; cursor: grab; }
+}
+/* === Mobile: put "More" under Delete, right-aligned === */
+@media (max-width: 640px){
+  /* Turn the action area into a 2x2 grid */
+  .cards.fields-list .field-grid .actions{
+    display: grid !important;
+    grid-template-columns: auto auto;   /* [Save] [Delete] */
+    grid-auto-rows: auto;
+    gap: 8px !important;
+    align-self: start !important;
+    justify-self: end !important;
+  }
+  /* Force positions by type (works with your icon-btn classes) */
+  .cards.fields-list .field-grid .actions .primary{ /* Save */
+    grid-column: 1; grid-row: 1;
+  }
+  .cards.fields-list .field-grid .actions .danger{  /* Delete */
+    grid-column: 2; grid-row: 1;
+  }
+  .cards.fields-list .field-grid .actions .more-btn{ /* More under Delete */
+    grid-column: 2; grid-row: 2;
+    justify-self: end;
+    margin-top: 4px;
+  }
+}
+/* === Mobile: align Label/input with action buttons on the top row === */
+@media (max-width: 640px){
+  /* Field editor becomes a 2-column grid: [Label area] | [Actions] */
+  .cards.fields-list .field-grid{
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;  /* left grows, right snug */
+    gap: 8px 10px !important;
+    align-items: start !important;
+  }
+
+  /* Put the Label (with its input) in the left, top cell */
+  .cards.fields-list .field-grid .label{
+    grid-column: 1; 
+    grid-row: 1;
+    margin: 0 !important;
+  }
+  .cards.fields-list .field-grid .label input{
+    height: 40px;            /* matches button height */
+  }
+
+  /* Actions (Save/Delete/More) in the right, top cell */
+  .cards.fields-list .field-grid .actions{
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start !important;
+    justify-self: end !important;
+
+    /* keep the 2x2 layout from earlier: Save | Delete (top), More below Delete */
+    display: grid !important;
+    grid-template-columns: auto auto;
+    grid-auto-rows: auto;
+    gap: 8px !important;
+  }
+  .cards.fields-list .field-grid .actions .primary{ grid-column:1; grid-row:1; } /* Save */
+  .cards.fields-list .field-grid .actions .danger { grid-column:2; grid-row:1; } /* Delete */
+  .cards.fields-list .field-grid .actions .more-btn{
+    grid-column:2; grid-row:2; justify-self:end;  /* More under Delete */
+  }
+
+  /* Make icon buttons same visual height as the text input */
+  .cards.fields-list .icon-btn{
+    width: 40px; height: 40px;
+  }
+
+  /* Ensure there’s enough top room for the pinned order/drag block if you use it */
+  .cards.fields-list .field-card .card-pad{
+    padding-top: 72px;  /* keep or tweak if your order/drag is taller/shorter */
+  }
+}
+/* Item row: content on the left, actions on the right */
+.list .item-row{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;                 /* small gap so pills sit close to actions */
+  align-items: start;
+}
+
+/* Left side content */
+.list .item-row .item-main{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Extras as pills, nudged toward the actions (right edge of left column) */
+.list .item-row .extras-inline{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end; /* pushes pills near the actions stack */
+}
+
+/* Right side actions: delete (top), edit (below), move (optional) */
+.list .item-row .item-actions{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+/* Keep icon sizes consistent with header icons */
+.list .item-row .icon-btn{
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+}
+
+/* Mobile: keep stack tight and readable */
+@media (max-width: 640px){
+  .list .item-row{
+    gap: 8px;
+  }
+  .list .item-row .extras-inline{
+    justify-content: flex-end;
+  }
+}
+/* Right-side action stack */
+.list .item-row .item-actions{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  align-items:flex-end;
+}
+
+/* Move (left) + Delete (right) on the same row */
+.list .item-row .actions-top{
+  display:flex;
+  gap:6px;
+  align-items:center;
+  justify-content:flex-end; /* keeps both aligned to the right edge */
+}
+
+/* Keep icon sizes consistent */
+.list .item-row .icon-btn{
+  width:32px;
+  height:32px;
+  padding:0;
+  border-radius:8px;
+}
+
+@media (max-width:640px){
+  .list .item-row .actions-top{ gap:8px; }
+}
+/* Wrapper spacing */
+.extras-wrap{ margin-top:.35rem; }
+
+/* Make the pills a touch bigger ONLY in this area */
+.extras-inline .pill{
+  font-size: 13px;         /* was ~12 — slightly larger */
+  padding: 3px 10px;       /* a bit roomier */
+}
+
+/* 2×2 grid preview (keeps pill look; no stretching) */
+.extras-inline{
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 6px;
+  justify-content: start;
+  align-content: start;
+}
+
+/* Hide everything after the 4th until expanded */
+.extras-inline.collapsible:not(.expanded) .pill:nth-child(n+5){
+  display: none;
+}
+
+/* Show-more button (subtle, on-brand) */
+.extras-more-btn{
+  display: inline-block;
+  margin-top: 6px;
+  margin-left: auto;      /* right align under the grid */
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  font-size: .95rem;
+  cursor: pointer;
+}
+.extras-more-btn:hover{ text-decoration: underline; }
+
+/* Super narrow phones: stack to 1 column to avoid squish */
+@media (max-width: 420px){
+  .extras-inline{ grid-template-columns: 1fr; }
+}
+/* Make only item rows use a 2x2 grid */
+.list > li.item-row{
+  display: grid;
+  grid-template-columns: auto 1fr;     /* left: actions column, right: content */
+  grid-template-areas:
+    "actions head"
+    "actions pills";
+  column-gap: 10px;
+  align-items: start;
+}
+
+/* Right side: title/note on row 1, pills on row 2 */
+.item-row .item-main{
+  display: contents;                   /* lets its children occupy named areas */
+}
+.item-row .item-main .title{ grid-area: head; }
+.item-row .badges.extras-inline{
+  grid-area: pills;
+  display: grid;
+  grid-template-columns: repeat(2, max-content); /* 2x2, keep pill look */
+  gap: 6px 8px;
+  justify-content: start;              /* left align block */
+  justify-items: start;                /* left align each pill */
+}
+
+/* Left side: buttons pinned to top-left, two rows:
+   row1 = move + delete, row2 = edit */
+.item-row .item-actions{
+  grid-area: actions;
+  display: grid;
+  grid-auto-rows: min-content;
+  gap: 8px;
+  align-content: start;
+  justify-items: start;                /* top-left */
+}
+.item-row .item-actions .actions-top{
+  display: flex;
+  gap: 8px;                            /* move + delete on the same row */
+}
+.item-row .item-actions .edit-btn{
+  justify-self: start;                 /* edit below, left aligned */
+}
+
+/* (Optional) keep things comfy on very narrow phones */
+@media (max-width: 420px){
+  .list > li.item-row{
+    column-gap: 8px;
+  }
+  .item-row .badges.extras-inline{
+    gap: 6px 6px;
+  }
+}
+/* Put actions on the RIGHT column; pills row stays on left */
+.list > li.item-row{
+  grid-template-columns: 1fr auto;          /* content | actions */
+  grid-template-areas:
+    "head  actions"
+    "pills actions";
+}
+
+/* Right column: align buttons to the right, stack: (move+delete) then edit */
+.item-row .item-actions{
+  grid-area: actions;
+  display: grid;
+  grid-auto-rows: min-content;
+  gap: 8px;
+  align-content: start;
+  justify-items: end;                        /* right align the column */
+}
+.item-row .item-actions .actions-top{
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;                 /* move + delete on top-right */
+}
+.item-row .item-actions .edit-btn{
+  justify-self: end;                         /* edit below, right aligned */
+}
+
+/* Keep pills on second row, left */
+.item-row .badges.extras-inline{
+  grid-area: pills;
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 6px 8px;
+  justify-content: start;
+  justify-items: start;
+}
+/* Item row layout: content left, actions top-right */
+.list li.item-row{
+  display: flex !important;
+  align-items: flex-start !important;  /* top align */
+  gap: 12px;
+}
+.item-row .item-main{
+  flex: 1 1 auto;
+  min-width: 0;                        /* prevent overflow */
+}
+.item-row .item-actions{
+  margin-left: auto !important;         /* push to right edge */
+  align-self: flex-start !important;    /* stick to top */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;                /* right-align inside */
+  gap: 8px;
+}
+.item-row .item-actions .actions-top{
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+/* Put "Show more" inside the pills area, top-right */
+.item-row .extras-wrap{
+  position: relative;            /* create positioning context */
+}
+
+.item-row .extras-inline{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-right: 112px;          /* space so pills don't go under the button */
+  min-height: 32px;              /* matches pill/button height so layout is stable */
+}
+
+/* The button sits on the top-right corner of the pills area */
+.item-row .extras-more-btn{
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+  white-space: nowrap;
+  height: 32px;                  /* roughly pill height; adjust if yours differs */
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+}
+/* Mobile: keep "Show more" inside the card and stop overflow */
+@media (max-width: 640px){
+  .item-row .extras-wrap{
+    position: relative;
+    overflow: hidden;                  /* never let children extend the card */
+  }
+
+  .item-row .extras-inline{
+    /* leave room for the button without forcing overflow */
+    padding-right: clamp(72px, 36vw, 112px);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 32px;                  /* same as button height for stable layout */
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .item-row .extras-more-btn{
+    position: absolute;
+    top: 0;
+    right: 8px;                        /* respect card padding on mobile */
+    height: 32px;
+    padding: 6px 10px;
+    /* make sure long text never widens the card */
+    max-width: 45%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+/* Wrap must be positioned so the button can anchor inside it */
+.item-row .extras-wrap{
+  position: relative;
+}
+
+/* Let pills wrap nicely and leave room for the button on the right */
+.item-row .extras-inline{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-right: 96px;               /* space so the button doesn't overlap */
+}
+
+/* The button itself: like icon-btn but can fit "+X" text */
+.icon-btn.count-btn{
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 32px;
+  min-width: 44px;
+  padding: 0 10px;
+  border-radius: 999px;              /* pill-y */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mobile: keep everything inside the card, avoid sideways scroll */
+@media (max-width: 640px){
+  .item-row .extras-inline{
+    padding-right: clamp(72px, 32vw, 104px);
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .icon-btn.count-btn{
+    right: 8px;                      /* respect card padding on small screens */
+  }
+}
+/* Pills flow + inline “+N” button */
+.item-row .extras-inline{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-right: 0;           /* no fake space needed now */
+  max-width: 100%;
+}
+
+.item-row .extras-inline .pill{
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.icon-btn.count-btn{
+  position: static !important; /* kill any absolute rules */
+  flex: 0 0 auto;
+  margin-left: auto;           /* push to right of the current row */
+  height: 32px;
+  min-width: 44px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mobile: keep everything within the card, allow wrapping */
+@media (max-width: 640px){
+  .item-row .extras-inline{
+    gap: 6px;
+    overflow-wrap: anywhere;   /* long values won’t force overflow */
+  }
+  .icon-btn.count-btn{
+    margin-left: auto;         /* stays at the right edge of its line */
+  }
+}
+/* Row: pills on the left, +N button on the right (same row) */
+.item-row .extras-wrap{
+  display:flex;
+  align-items:flex-start;   /* top-align with title */
+  gap:8px;
+  max-width:100%;
+}
+
+/* Pills container wraps within the left column */
+.item-row .extras-inline{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  flex:1 1 auto;            /* take remaining space */
+  min-width:0;              /* allow shrinking to avoid overflow */
+  overflow-wrap:anywhere;   /* long values won't push layout */
+}
+
+/* Keep the button at the far right, on the first row */
+.icon-btn.count-btn{
+  position:static !important; /* kill any old absolute rules */
+  flex:0 0 auto;
+  align-self:flex-start;      /* top-right, not vertically centered */
+  height:34px;
+  padding:0 10px;
+  border-radius:999px;
+  font-variant-numeric: tabular-nums;
+  white-space:nowrap;
+}
+
+/* Collapse to 4 pills when not expanded */
+.item-row .extras-inline.collapsible .pill:nth-child(n+5){ display:none; }
+.item-row .extras-inline.expanded .pill{ display:inline-flex; }
+
+/* Mobile safety */
+@media (max-width: 640px){
+  .item-row .extras-wrap{ gap:8px; }
+  .item-row .extras-inline{ gap:6px; }
+  .icon-btn.count-btn{ height:34px; }
+}
+/* Hide pills 5+ by default */
+.item-row .extras-inline.collapsible .pill:nth-child(n+5){ display:none; }
+
+/* When expanded, explicitly re-show pills 5+ with equal specificity */
+.item-row .extras-inline.collapsible.expanded .pill:nth-child(n+5){
+  display:inline-flex;
+}

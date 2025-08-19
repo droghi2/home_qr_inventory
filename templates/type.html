@@ -39,15 +39,15 @@
     <div class="card-pad">
         <div class="field-row">
         <!-- LEFT: compact vertical stack (badge above, handle below) -->
-        <div class="order-cell">
-            <span class="order-badge" data-order="{{ f['ord'] }}">{{ f['ord'] }}</span>
-            <button type="button" class="icon-btn drag-handle" title="Drag to reorder" aria-label="Drag to reorder">⠿</button>
-        </div>
+
 
         <!-- MIDDLE: edit form (unchanged fields, no Order input) -->
         <form action="/fields/{{ f['id'] }}/update" method="post" class="field-grid">
             <input type="hidden" name="type_id" value="{{ t['id'] }}">
-
+            <div class="order-cell">
+                <span class="order-badge" data-order="{{ f['ord'] }}">{{ f['ord'] }}</span>
+                <button type="button" class="icon-btn drag-handle" title="Drag to reorder" aria-label="Drag to reorder">⠿</button>
+            </div>
             <label class="label">
             <span class="muted">Label</span>
             <input required name="label" value="{{ f['label'] }}">
@@ -448,6 +448,69 @@
   window._autoScrollUpdate = updateAutoScroll;
   window._autoScrollStop   = stopAutoScroll;
 })();
+
+
+/* Mobile: inline actions + "More" and move Delete into actions (≤640px) */
+(function(){
+  const mq = window.matchMedia('(max-width: 640px)');
+
+  function applyMobileUI(){
+    document.querySelectorAll('.fields-list .field-row').forEach(row=>{
+      const form = row.querySelector('.field-grid');
+      if(!form) return;
+
+      // Ensure an actions container exists
+      let actions = form.querySelector('.actions');
+      if(!actions){
+        actions = document.createElement('div');
+        actions.className = 'actions';
+        form.appendChild(actions);
+      }
+
+      // Ensure the "More" button exists on mobile
+      let moreBtn = actions.querySelector('.more-btn');
+      if(mq.matches){
+        if(!moreBtn){
+          moreBtn = document.createElement('button');
+          moreBtn.type = 'button';
+          moreBtn.className = 'icon-btn more more-btn';
+          moreBtn.textContent = '⋯';
+          moreBtn.title = 'More';
+          moreBtn.setAttribute('aria-expanded','false');
+          moreBtn.addEventListener('click', ()=>{
+            form.classList.toggle('show-extras');
+            const exp = form.classList.contains('show-extras');
+            moreBtn.setAttribute('aria-expanded', exp ? 'true' : 'false');
+          });
+          // Place "More" to the left of Save so both fit
+          actions.insertBefore(moreBtn, actions.firstChild);
+        }
+      }else{
+        if(moreBtn) moreBtn.remove();
+        form.classList.remove('show-extras');
+      }
+
+      // Move Delete into actions on mobile; put it back on desktop
+      const deleteForm = row.querySelector('.delete-cell');
+      if(deleteForm){
+        if(mq.matches){
+          if(deleteForm.parentElement !== actions){
+            actions.appendChild(deleteForm);        // inline with Save/More
+          }
+        }else{
+          if(deleteForm.parentElement !== row){
+            row.appendChild(deleteForm);            // back to row end on desktop
+          }
+        }
+      }
+    });
+  }
+
+  applyMobileUI();
+  mq.addEventListener('change', applyMobileUI);
+})();
+
+
 </script>
 
 {% endblock %}
