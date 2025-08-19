@@ -6,17 +6,161 @@
   <title>{{ title }}</title>
   <meta name="theme-color" content="#2563eb">
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#2563eb">
+<style>
+  .header-inner{display:flex;align-items:center;gap:12px;padding:8px 12px}
+  .brand{display:flex;align-items:center;gap:8px;min-width:0}
+  .header-search{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+  .header-search input{flex:1;min-width:0}
+  .header-search .icon-btn{flex:0 0 auto}
+  .menu-wrap{position:relative}
+  /* Opaque dropdown (no glass) */
+  .menu-dropdown{
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    min-width: 180px;
+
+    /* solid background + crisp border */
+    background: #0b1220 !important;
+    color: #e6eefb;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+
+    /* stronger shadow, no blur */
+    box-shadow: 0 14px 30px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.25);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+
+    padding: 6px;
+    z-index: 1000;
+  }
+
+  .menu-item{
+    display: block;
+    padding: 8px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #e6eefb;             /* readable on dark */
+  }
+
+  .menu-item:hover{
+    background: rgba(255,255,255,.06); /* subtle hover on dark */
+  }
+    @media (max-width:640px){
+      .header-inner{gap:8px}
+      .brand div:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45vw}
+    }
+</style>
+<style>
+  /* Menu button = same look as the emoji logo tile */
+  #menuBtn{
+    width: 36px; height: 36px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #6bb8ff 0%, #4ea1ff 45%, #3b7cff 100%);
+    color: #0b1220;
+    border: none;
+    box-shadow:
+      0 8px 18px rgba(78,161,255,.35),
+      0 0 0 1px rgba(78,161,255,.35) inset;
+    transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
+  }
+  #menuBtn:hover{
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+  }
+  #menuBtn:active{
+    transform: translateY(1px);
+    filter: brightness(.98);
+  }
+  #menuBtn:focus-visible{
+    outline: none;
+    box-shadow:
+      0 0 0 3px rgba(78,161,255,.45),
+      0 8px 18px rgba(78,161,255,.35),
+      0 0 0 1px rgba(78,161,255,.35) inset;
+  }
+</style>
+
+<style>
+  /* already have .header-inner, .brand from earlier snippet */
+  @media (max-width: 640px){
+    .brand > :nth-child(2){ display:none; }   /* hide the title, keep the logo */
+    .header-inner{ gap: 8px; }
+  }
+  /* logo container */
+.header-inner .logo{
+  width: 36px; height: 36px; border-radius: 10px;
+  display:grid; place-items:center;
+  /* remove the emoji tile gradient since we're showing your image now */
+  background: transparent;
+  box-shadow: none;
+  transition: transform .18s ease, filter .18s ease;
+}
+.header-inner .logo:hover{ transform: translateY(-1px); filter: brightness(1.05); }
+
+/* make the image fit nicely */
+.header-inner .logo picture,
+.header-inner .logo img{
+  width: 100%; height: 100%;
+  display: block;
+  object-fit: contain;      /* preserves aspect ratio */
+  border-radius: 10px;      /* round corners if your image is square */
+}
+
+/* keep your title text styling as before */
+.header-inner .brand > .brand-text{
+  font-size: 1.02rem;
+  color: var(--text);
+  text-shadow: 0 1px 0 rgba(0,0,0,.35);
+}
+
+/* mobile: hide the brand text, show just the icon + controls */
+@media (max-width: 640px){
+  .header-inner .brand > .brand-text{ display:none; }
+}
+</style>
+
+
 </head>
 <body>
   <header>
     <div class="header-inner">
       <div class="brand">
-        <div class="logo">🏷</div>
-        <div>Home QR Inventory (Typed)</div>
+        <div class="brand">
+          <a class="logo" href="/" aria-label="Home" title="Home">
+            <picture>
+              <!-- prefer your dedicated logo first -->
+              <source srcset="/static/favicon.svg" type="image/svg+xml">
+              <!-- fallback if you only have a PNG -->
+              <img src="/static/logo.png"
+                  alt="Home QR Inventory"
+                  width="36" height="36"
+                  loading="eager" decoding="async">
+            </picture>
+          </a>
+          <div class="brand-text">Home QR Inventory</div>
+        </div>
       </div>
-      <div style="margin-left:auto" class="muted">private & local</div>
+
+      <!-- Global search (always visible, submits to /) -->
+      <form class="header-search" method="get" action="/" role="search" aria-label="Search">
+        <input type="text" name="q" placeholder="Search containers/items…" value="{{ q or '' }}" aria-label="Search query">
+        <button class="icon-btn" title="Search" aria-label="Search">🔍</button>
+      </form>
+
+      <!-- Rightmost menu -->
+      <div class="menu-wrap">
+        <button id="menuBtn" class="icon-btn glow" title="Menu" aria-haspopup="true" aria-expanded="false">⋮</button>
+        <div id="menuDropdown" class="menu-dropdown card" hidden>
+          <a class="menu-item" href="/types">Item Types</a>
+        </div>
+      </div>
     </div>
   </header>
+
+
 
   <div class="container">
     <main>
@@ -48,4 +192,28 @@
 
   </div>
 </body>
+<script>
+  (function(){
+    const wrap = document.querySelector('.menu-wrap');
+    const btn  = document.getElementById('menuBtn');
+    const dd   = document.getElementById('menuDropdown');
+    if(!wrap || !btn || !dd) return;
+
+    function open(){ dd.hidden=false; btn.setAttribute('aria-expanded','true'); }
+    function close(){ dd.hidden=true; btn.setAttribute('aria-expanded','false'); }
+
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      dd.hidden ? open() : close();
+    });
+
+    document.addEventListener('click', (e)=>{
+      if(!wrap.contains(e.target)) close();
+    });
+
+    document.addEventListener('keydown', (e)=>{
+      if(e.key==='Escape') close();
+    });
+  })();
+</script>
 </html>

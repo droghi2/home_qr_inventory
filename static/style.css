@@ -2412,3 +2412,28 @@ main > a.link:first-child *{ text-decoration: none !important; }
 .item-row .extras-inline.collapsible.expanded .pill:nth-child(n+5){
   display:inline-flex;
 }
+/* First real content after the (hidden) confirm modal */
+.container main > #confirmModal + * { margin-top: 14px; }      /* phones */
+@media (min-width: 640px){
+  .container main > #confirmModal + * { margin-top: 18px; }    /* tablets */
+}
+@media (min-width: 1024px){
+  .container main > #confirmModal + * { margin-top: 24px; }    /* desktop */
+}
+/* Make the header logo container transparent */
+.header-inner .brand .logo{
+  background: transparent;   /* or: background: none; */
+  box-shadow: none;
+}
+
+/* Ensure the image itself has no background */
+.header-inner .brand .logo picture,
+.header-inner .brand .logo img{
+  background: transparent;
+}
+
+/* Optional: keep the hover lift without any glow */
+.header-inner .brand .logo:hover{
+  transform: translateY(-1px);
+  filter: none;
+}

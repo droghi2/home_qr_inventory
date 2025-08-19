@@ -1,14 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- Global search (containers + items) -->
-<div class="section">
-  <form class="row" method="get" action="/" style="gap:8px;">
-    <input style="flex:1" type="text" name="q" placeholder="Search containers/items…" value="{{ q or '' }}">
-    <button class="primary">Search</button>
-  </form>
-</div>
-
 {% if q and results %}
   <div class="section">
     <h2 class="kicker">Search results</h2>
@@ -40,7 +32,9 @@
     </ul>
   </div>
 {% elif q %}
-  <div class="empty">No matches.</div>
+  <div class="section">
+    <div class="empty">No matches.</div>
+  </div>
 {% endif %}
 
 <!-- Top-level widget (cabinet/wardrobe tiles with counts) -->
@@ -49,70 +43,39 @@
   <button class="icon-btn plus" id="addTopBtn" title="Add top-level">+</button>
 </div>
 
-
-  <ul class="cards subgrid" id="topGrid" style="margin-top:.6rem">
-    {% for n in top %}
-    <li class="card subcard {% if loop.index0 >= 12 %}hidden-top{% endif %}" data-name="{{ (n['name'] ~ ' ' ~ n['type'])|lower }}">
-      <div class="card-pad">
-        <!-- TOP ROW: node title (link) + plus on the right -->
-        <div class="row" style="justify-content:space-between; align-items:center;">
-          <h3 class="tile-title" style="margin:.1rem 0 0 0;">
-            <a class="link" href="/node/{{ n['id'] }}">{{ n['name'] }}</a>
-          </h3>
-          <button class="icon-btn plus addChildBtn" data-parent="{{ n['id'] }}" title="Add shelf/drawer">+</button>
-        </div>
-
-        <!-- NOTE (optional) -->
-        {% if n['note'] %}
-          <div class="muted" style="margin-top:.35rem">{{ n['note'] }}</div>
-        {% endif %}
-
-        <!-- BOTTOM ROW: type + counters -->
-        <div class="badges" style="margin-top:.5rem">
-          <span class="pill">{{ n['type'] }}</span>
-          <span class="chip">Shelves: {{ shelves_count.get(n['id'], 0) }}</span>
-          <span class="chip">Drawers: {{ drawers_count.get(n['id'], 0) }}</span>
-          <span class="chip accent">Containers: {{ containers_count.get(n['id'], 0) }}</span>
-        </div>
+<ul class="cards subgrid" id="topGrid" style="margin-top:.6rem">
+  {% for n in top %}
+  <li class="card subcard {% if loop.index0 >= 12 %}hidden-top{% endif %}" data-name="{{ (n['name'] ~ ' ' ~ n['type'])|lower }}">
+    <div class="card-pad">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <h3 class="tile-title" style="margin:.1rem 0 0 0;">
+          <a class="link" href="/node/{{ n['id'] }}">{{ n['name'] }}</a>
+        </h3>
+        <button class="icon-btn plus addChildBtn" data-parent="{{ n['id'] }}" title="Add shelf/drawer">+</button>
       </div>
 
+      {% if n['note'] %}
+        <div class="muted" style="margin-top:.35rem">{{ n['note'] }}</div>
+      {% endif %}
 
-    </li>
-    {% else %}
-      <li class="empty">No top-level nodes. Add one below.</li>
-    {% endfor %}
-  </ul>
-
-  <!-- Modal: Add top-level Cabinet/Wardrobe -->
-  <div id="addTopModal" class="modal modal-small">
-    <div class="modal-content card">
-      <div class="card-pad">
-        <h2 class="kicker">New top-level</h2>
-        <form action="/nodes" method="post" class="stack">
-          <input type="hidden" name="parent_id"><!-- empty => ROOT -->
-          <label>Type
-            <select name="type">
-              <option value="Cabinet">Cabinet</option>
-              <option value="Wardrobe">Wardrobe</option>
-            </select>
-          </label>
-          <label>Name <input required name="name" placeholder="e.g., Birou Matei"></label>
-          <label>Note <input name="note" placeholder="optional"></label>
-          <div class="row" style="gap:8px; justify-content:flex-end;">
-            <button type="button" class="ghost" id="cancelTop">Cancel</button>
-            <button class="primary">Create</button>
-          </div>
-        </form>
+      <div class="badges" style="margin-top:.5rem">
+        <span class="pill">{{ n['type'] }}</span>
+        <span class="chip">Shelves: {{ shelves_count.get(n['id'], 0) }}</span>
+        <span class="chip">Drawers: {{ drawers_count.get(n['id'], 0) }}</span>
+        <span class="chip accent">Containers: {{ containers_count.get(n['id'], 0) }}</span>
       </div>
     </div>
+  </li>
+  {% else %}
+    <li class="empty">No top-level nodes. Add one below.</li>
+  {% endfor %}
+</ul>
+
+{% if top|length > 12 %}
+  <div class="row" style="justify-content:center; margin-top:.8rem;">
+    <button class="ghost tiny" id="toggleTop">Show more</button>
   </div>
-
-
-  {% if top|length > 12 %}
-    <div class="row" style="justify-content:center; margin-top:.8rem;">
-      <button class="ghost tiny" id="toggleTop">Show more</button>
-    </div>
-  {% endif %}
+{% endif %}
 </div>
 
 
