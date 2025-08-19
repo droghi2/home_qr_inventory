@@ -38,10 +38,13 @@
                     title="Add field"
                     data-type-id="{{ t['id'] }}"
                     data-type-name="{{ t['name'] }}">+</button>
-            <form action="/types/{{ t['id'] }}/delete" method="post"
-                  onsubmit="return confirm('Delete type and all its fields?');">
-              <button class="icon-btn danger" title="Delete type" aria-label="Delete type">🗑️</button>
-            </form>
+          <form class="needs-confirm"
+                action="/types/{{ t['id'] }}/delete"
+                method="post"
+                data-confirm="Delete item type “{{ t['name'] }}” and ALL its fields? This cannot be undone.">
+            <button class="icon-btn danger" title="Delete type" aria-label="Delete type">🗑️</button>
+          </form>
+
           </div>
         </div>
 
@@ -139,6 +142,38 @@
 
 
 <script>
+
+
+(function(){
+  const modal = document.getElementById('confirmModal');
+  if(!modal) return;
+
+  const msgEl  = document.getElementById('confirmMsg');
+  const okBtn  = document.getElementById('confirmOk');
+  const cancel = document.getElementById('confirmCancel');
+  let pendingForm = null;
+
+  function open(msg){ msgEl.textContent = msg || 'Are you sure?'; modal.style.display='flex'; }
+  function close(){ modal.style.display='none'; pendingForm=null; }
+
+  modal.addEventListener('click', e=>{ if(e.target===modal) close(); });
+  cancel.addEventListener('click', close);
+  window.addEventListener('keydown', e=>{ if(e.key==='Escape') close(); });
+
+  okBtn.addEventListener('click', ()=>{ if(pendingForm){ pendingForm.submit(); } close(); });
+
+  document.querySelectorAll('form.needs-confirm').forEach(form=>{
+    form.addEventListener('submit', (e)=>{
+      if(form.dataset.confirmed==='1') return;
+      e.preventDefault();
+      pendingForm = form;
+      open(form.dataset.confirm || 'Are you sure you want to delete this?');
+    }, { capture:true });
+  });
+})();
+
+
+
   // show/hide Options when Kind=select
   const addKindSelect  = document.getElementById('addKindSelect');
   const addOptionsWrap = document.getElementById('addOptionsWrap');

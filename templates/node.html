@@ -23,11 +23,14 @@
         <!-- Top-level title + trash -->
         <div class="row titlebar" style="justify-content:space-between; align-items:center; margin-top:.3rem;">
           <h2 style="margin:.3rem 0 0 0">{{ node['name'] }}</h2>
-          <form class="no-shrink" action="/node/{{ node['id'] }}/delete" method="post"
-                data-ntype="{{ node['type'] }}"
-                onsubmit="return confirmNodeDelete(this);">
-            <button class="icon-btn danger" type="submit" aria-label="Delete {{ node['type'] }}" title="Delete {{ node['type'] }}">🗑️</button>
-          </form>
+        <!-- TOP-LEVEL (Cabinet/Wardrobe) -->
+        <form class="no-shrink needs-confirm"
+              action="/node/{{ node['id'] }}/delete"
+              method="post"
+              data-confirm="Delete {{ node['type'] }} — {{ node['name'] }} and EVERYTHING inside it? This cannot be undone.">
+          <button class="icon-btn danger" type="submit"
+                  aria-label="Delete {{ node['type'] }}" title="Delete {{ node['type'] }}">🗑️</button>
+        </form>
         </div>
 
       {% elif node['type'] in ['Shelf','Drawer'] %}
@@ -59,11 +62,15 @@
 
         <div class="row titlebar" style="justify-content:space-between; align-items:center; margin-top:.3rem;">
           <h2 style="margin:.3rem 0 0 0">{{ node['name'] }}</h2>
-          <form class="no-shrink" action="/node/{{ node['id'] }}/delete" method="post"
-                data-ntype="{{ node['type'] }}"
-                onsubmit="return confirmNodeDelete(this);">
-            <button class="icon-btn danger" type="submit" aria-label="Delete {{ node['type'] }}" title="Delete {{ node['type'] }}">🗑️</button>
-          </form>
+        <!-- Shelf/Drawer -->
+        <form class="no-shrink needs-confirm"
+              action="/node/{{ node['id'] }}/delete"
+              method="post"
+              data-confirm="Delete {{ node['type'] }} — {{ node['name'] }} and EVERYTHING inside it? This cannot be undone.">
+          <button class="icon-btn danger" type="submit"
+                  aria-label="Delete {{ node['type'] }}" title="Delete {{ node['type'] }}">🗑️</button>
+        </form>
+
         </div>
 
       {% else %}
@@ -284,7 +291,56 @@
   </div>
 {% endif %}
 
+
+
+
+
+
 <script>
+
+
+
+(function(){
+  const modal = document.getElementById('confirmModal');
+  if(!modal) return; // modal not present
+
+  const msgEl  = document.getElementById('confirmMsg');
+  const okBtn  = document.getElementById('confirmOk');
+  const cancel = document.getElementById('confirmCancel');
+  let pendingForm = null;
+
+  function open(msg){
+    msgEl.textContent = msg || 'Are you sure?';
+    modal.style.display = 'flex';
+  }
+  function close(){ modal.style.display = 'none'; }
+
+  modal.addEventListener('click', (e)=>{ if(e.target === modal) close(); });
+  cancel.addEventListener('click', close);
+  window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
+
+  okBtn.addEventListener('click', ()=>{
+    if(pendingForm){
+      // Programmatic submit (skips submit listeners)
+      pendingForm.submit();
+      pendingForm = null;
+    }
+    close();
+  });
+
+  // Attach to any form with .needs-confirm
+  document.querySelectorAll('form.needs-confirm').forEach(form=>{
+    form.addEventListener('submit', (e)=>{
+      // If already confirmed (e.g. page restore), let it pass
+      if(form.dataset.confirmed === '1') return;
+      e.preventDefault();
+      pendingForm = form;
+      open(form.dataset.confirm || 'Are you sure you want to delete this?');
+    }, { capture: true });
+  });
+})();
+
+
   // Show more/less for shelves
   const toggleShelves = document.getElementById('toggleShelves');
   if (toggleShelves){
@@ -346,18 +402,13 @@
     });
   }
 
-  function confirmTopDelete(){
-    return confirm('Delete this top-level and EVERYTHING inside it? This cannot be undone.');
-  }
+
   
   function confirmTopDeleteWithType(form){
     const t = (form.getAttribute('data-ntype') || 'this').toLowerCase();
     return confirm(`Delete this ${t} and EVERYTHING inside it? This cannot be undone.`);
   }
-    function confirmNodeDelete(form){
-    const t = (form.getAttribute('data-ntype') || 'this').toLowerCase();
-    return confirm(`Delete this ${t} and EVERYTHING inside it? This cannot be undone.`);
-  }
+
 </script>
 
 

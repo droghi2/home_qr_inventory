@@ -16,10 +16,13 @@
         <h2 style="margin:.3rem 0 0 0">{{ t['name'] }}</h2>
         <div class="row" style="gap:8px;">
           <button class="icon-btn plus" id="addFieldBtn" title="Add field">+</button>
-          <form action="/types/{{ t['id'] }}/delete" method="post"
-                onsubmit="return confirm('Delete this type and ALL its fields?');">
+          <form class="needs-confirm"
+                action="/types/{{ t['id'] }}/delete"
+                method="post"
+                data-confirm="Delete item type “{{ t['name'] }}” and ALL its fields? This cannot be undone.">
             <button class="icon-btn danger" title="Delete type" aria-label="Delete type">🗑️</button>
           </form>
+
         </div>
       </div>
     </div>
@@ -80,11 +83,14 @@
         </form>
 
         <!-- RIGHT: delete -->
-        <form action="/fields/{{ f['id'] }}/delete" method="post"
-                onsubmit="return confirm('Delete this field?');" class="delete-cell">
-            <input type="hidden" name="type_id" value="{{ t['id'] }}">
-            <button class="icon-btn danger" title="Delete field" aria-label="Delete field">🗑️</button>
+        <form class="needs-confirm delete-cell"
+              action="/fields/{{ f['id'] }}/delete"
+              method="post"
+              data-confirm="Delete field “{{ f['label'] }}” from type “{{ t['name'] }}”?">
+          <input type="hidden" name="type_id" value="{{ t['id'] }}">
+          <button class="icon-btn danger" title="Delete field" aria-label="Delete field">🗑️</button>
         </form>
+
         </div>
     </div>
     </li>
@@ -134,6 +140,36 @@
 </div>
 
 <script>
+
+(function(){
+  const modal = document.getElementById('confirmModal');
+  if(!modal) return;
+
+  const msgEl  = document.getElementById('confirmMsg');
+  const okBtn  = document.getElementById('confirmOk');
+  const cancel = document.getElementById('confirmCancel');
+  let pendingForm = null;
+
+  function open(msg){ msgEl.textContent = msg || 'Are you sure?'; modal.style.display='flex'; }
+  function close(){ modal.style.display='none'; pendingForm=null; }
+
+  modal.addEventListener('click', e=>{ if(e.target===modal) close(); });
+  cancel.addEventListener('click', close);
+  window.addEventListener('keydown', e=>{ if(e.key==='Escape') close(); });
+
+  okBtn.addEventListener('click', ()=>{ if(pendingForm){ pendingForm.submit(); } close(); });
+
+  document.querySelectorAll('form.needs-confirm').forEach(form=>{
+    form.addEventListener('submit', (e)=>{
+      if(form.dataset.confirmed==='1') return;
+      e.preventDefault();
+      pendingForm = form;
+      open(form.dataset.confirm || 'Are you sure you want to delete this?');
+    }, { capture:true });
+  });
+})();
+
+
   // Add Field modal open/close
   const addFieldBtn   = document.getElementById('addFieldBtn');
   const addFieldModal = document.getElementById('addFieldModal');

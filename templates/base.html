@@ -20,6 +20,23 @@
 
   <div class="container">
     <main>
+
+      <div id="confirmModal" class="modal modal-small" style="display:none">
+        <div class="modal-content card">
+          <div class="card-pad">
+            <h3 class="kicker" id="confirmTitle">Confirm delete</h3>
+            <p id="confirmMsg" class="muted" style="margin:.6rem 0 1rem 0"></p>
+            <div class="row" style="gap:8px; justify-content:flex-end;">
+              <button type="button" class="ghost" id="confirmCancel">Cancel</button>
+              <button type="button" class="danger" id="confirmOk">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+
       {% block content %}{% endblock %}
     </main>
     <footer class="section muted">
