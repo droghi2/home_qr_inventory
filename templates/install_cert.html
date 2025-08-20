@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section">
+  <div class="card">
+    <div class="card-pad">
+      <h2 class="kicker" style="margin-top:0">Install certificate</h2>
+
+      {% if has_root %}
+      <p class="muted">Install the <strong>mkcert root CA</strong> on your device so it trusts this server’s HTTPS.</p>
+      <ul>
+        <li>Android: <a class="link" href="/certs/rootCA.crt" download>rootCA.crt</a> → Settings → Security → Encryption & credentials → Install a certificate → <em>CA certificate</em>.</li>
+        <li>iOS/iPadOS: <a class="link" href="/certs/rootCA.cer" download>rootCA.cer</a> → open → Install Profile → then Settings → General → About → Certificate Trust Settings → enable full trust.</li>
+        <li>Windows: <a class="link" href="/certs/rootCA.crt" download>rootCA.crt</a> → double-click → Install Certificate… → Local Machine → Trusted Root Certification Authorities.</li>
+        <li>macOS: <a class="link" href="/certs/rootCA.pem" download>rootCA.pem</a> → Keychain Access (System) → import → set “Always Trust”.</li>
+      </ul>
+      <p class="muted">After installing, open <code>https://{{ request.client.host or 'your-LAN-IP' }}:8443</code> in your mobile browser.</p>
+      {% else %}
+      <p>No mkcert root CA found. On the server, run:</p>
+      <pre>mkcert -install</pre>
+      <p>Then restart this app so it can expose <code>rootCA.*</code> for download.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

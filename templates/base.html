@@ -164,6 +164,8 @@
         <div id="menuDropdown" class="menu-dropdown card" hidden>
           <a class="menu-item" href="/types">Item Types</a>
           <button type="button" class="menu-item" id="scanQrMenu">Scan QR</button>
+          <a class="menu-item" href="/install-certificate">Install on phone/PC</a>
+
         </div>
       </div>
     </div>
@@ -259,48 +261,51 @@
   const ctx       = canvas.getContext('2d', { willReadFrequently: true });
   const statusEl  = document.getElementById('qrStatus');
   const closeBtn  = document.getElementById('qrCloseBtn');
+  const torchBtn  = document.getElementById('qrTorchBtn');
 
-  // Header/menu openers (if present)
+  // header/menu buttons (if present)
   const openBtns  = [document.getElementById('qrBtn'), document.getElementById('scanQrMenu')].filter(Boolean);
-  // Optional: Move Item modal scan button (add a button with id="moveScanBtn" next to the select)
+  // optional: a button inside other modals you may wire up by setting window.qrScanHook before opening
   const moveScanBtn = document.getElementById('moveScanBtn');
 
   let scanning = false;
   let handled  = false;
   let cams = [], camIdx = -1;
   let detector = null;
-
-  // Keep track of modals we hide behind the scanner
+  let torchOn = false;
   let _hiddenModals = [];
 
-  // Prefer native API if available
   if ('BarcodeDetector' in window) {
     try { detector = new BarcodeDetector({ formats: ['qr_code'] }); } catch {}
   }
 
-  // ===== helpers =====
+  // ---------- helpers ----------
   function extractContainerId(s) {
-    // Expect 8 hex chars (your container id format)
     const m = String(s).toUpperCase().match(/\b[0-9A-F]{8}\b/);
     return m ? m[0] : null;
   }
 
-  async function listCams(){
+  async function listCams() {
     const devs = await navigator.mediaDevices.enumerateDevices();
     cams = devs.filter(d => d.kind === 'videoinput');
     if (camIdx === -1 && cams.length) camIdx = 0;
   }
 
-  function stopStream(){
+  function isBackLabel(label='') {
+    const l = label.toLowerCase();
+    return /back|rear|environment/.test(l);
+  }
+
+  function stopStream() {
     const s = video?.srcObject;
     if (s) s.getTracks().forEach(t => t.stop());
     if (video) video.srcObject = null;
   }
 
-  async function waitForVideoReady(video) {
-    if (video.readyState >= 2 && video.videoWidth && video.videoHeight) return;
-    await new Promise(r => { const h=()=>{ video.onloadedmetadata=null; r(); }; video.onloadedmetadata = h; });
-    for (let i=0; i<10 && (!video.videoWidth || !video.videoHeight); i++) {
+  async function waitForVideoReady(v) {
+    if (v.readyState >= 2 && v.videoWidth && v.videoHeight) return;
+    await new Promise(r => { const h=()=>{ v.onloadedmetadata=null; r(); }; v.onloadedmetadata = h; });
+    for (let i=0; i<10 && (!v.videoWidth || !v.videoHeight); i++) {
       await new Promise(r => setTimeout(r, 50));
     }
   }
@@ -311,56 +316,112 @@
       const el = document.getElementById(id);
       if (!el) return;
       const visible = getComputedStyle(el).display !== 'none';
-      if (visible){
-        _hiddenModals.push(el);
-        el.style.display = 'none';
-      }
+      if (visible){ _hiddenModals.push(el); el.style.display = 'none'; }
     });
   }
-  function restoreHiddenModals(){
-    _hiddenModals.forEach(el => el.style.display = 'flex');
-    _hiddenModals = [];
+  function restoreHiddenModals(){ _hiddenModals.forEach(el => el.style.display='flex'); _hiddenModals = []; }
+
+  function getActiveVideoTrack() {
+    const s = video?.srcObject;
+    if (!s) return null;
+    const tracks = s.getVideoTracks();
+    return tracks.length ? tracks[0] : null;
   }
 
-  // ===== camera & loop =====
-  async function startCamera(deviceId){
+  function setupTorchUI() {
+    const track = getActiveVideoTrack();
+    torchOn = false;
+    if (!torchBtn) return;
+    if (!track) { torchBtn.style.display='none'; return; }
+    const caps = track.getCapabilities ? track.getCapabilities() : {};
+    if (caps && 'torch' in caps) {
+      torchBtn.style.display = '';
+      torchBtn.textContent = 'Toggle light';
+    } else {
+      torchBtn.style.display = 'none';
+    }
+  }
+
+  async function toggleTorch() {
+    const track = getActiveVideoTrack();
+    if (!track || !track.applyConstraints) return;
+    const caps = track.getCapabilities ? track.getCapabilities() : {};
+    if (!('torch' in caps)) return;
+    torchOn = !torchOn;
+    try {
+      await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+    } catch { /* ignore */ }
+  }
+
+  async function tryGetUserMedia(constraints) {
+    try { return await navigator.mediaDevices.getUserMedia(constraints); }
+    catch { return null; }
+  }
+
+  async function startCameraPreferredBack() {
     stopStream();
 
-    // Needs HTTPS (or localhost) for camera
     const insecure = location.protocol !== 'https:' && location.hostname !== 'localhost';
     if (insecure) {
       if (statusEl) statusEl.textContent = 'Needs HTTPS (or http://localhost) for camera.';
       return;
     }
 
-    const tries = [
-      { video: { deviceId: deviceId ? { exact: deviceId } : undefined,
-                 facingMode: { ideal: 'environment' },
-                 width: { ideal: 1920 }, height: { ideal: 1080 } }, audio:false },
-      { video: { deviceId: deviceId ? { exact: deviceId } : undefined,
-                 width: { ideal: 1280 }, height: { ideal: 720 } }, audio:false },
-      { video: true }
+    // 1) Try hard "environment" first (some browsers support exact)
+    const attempts = [
+      { video: { facingMode: { exact: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+      { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+      { video: true } // last resort
     ];
 
-    let stream = null, lastErr = null;
-    for (const c of tries) {
-      try { stream = await navigator.mediaDevices.getUserMedia(c); break; }
-      catch(e){ lastErr = e; }
+    let stream = null;
+    for (const c of attempts) {
+      stream = await tryGetUserMedia(c);
+      if (stream) break;
     }
     if (!stream) {
-      if (statusEl) statusEl.textContent =
-        lastErr?.name === 'NotAllowedError'
-          ? 'Camera blocked. Allow it (lock icon) and reload.'
-          : 'Could not start camera.';
+      if (statusEl) statusEl.textContent = 'Could not start camera.';
       return;
     }
 
+    // 2) If we didn't actually get the back camera, switch by deviceId if we can identify a rear camera by label
     video.srcObject = stream;
     await video.play();
+
+    // After permission, labels become available
+    await listCams();
+    const currentTrack = getActiveVideoTrack();
+    const sett = currentTrack?.getSettings?.() || {};
+    const alreadyBack = (sett.facingMode || '').toLowerCase() === 'environment';
+
+    if (!alreadyBack && cams.length) {
+      // Prefer a device whose label hints "back/rear/environment"
+      const rear = cams.find(d => isBackLabel(d.label)) || cams.find(d => /camera\s*[\d]/i.test(d.label));
+      if (rear && rear.deviceId && rear.deviceId !== sett.deviceId) {
+        // switch to that device
+        stopStream();
+        const s2 = await tryGetUserMedia({
+          video: { deviceId: { exact: rear.deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          audio: false
+        });
+        if (s2) {
+          stream = s2;
+          video.srcObject = stream;
+          await video.play();
+        } else {
+          // if switching failed, restore original
+          video.srcObject = stream;
+          await video.play();
+        }
+      }
+    }
+
     await waitForVideoReady(video);
 
     canvas.width  = video.videoWidth  || 640;
     canvas.height = video.videoHeight || 480;
+
+    setupTorchUI();
 
     if (statusEl) statusEl.textContent = 'Point camera at a QR…';
     handled = false;
@@ -372,7 +433,6 @@
     if (!scanning || handled) return;
 
     try{
-      // Native first
       if (detector) {
         const res = await detector.detect(video);
         if (res && res.length) {
@@ -383,7 +443,6 @@
         }
       }
 
-      // Fallback: jsQR on a canvas frame
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
       if (window.jsQR) {
@@ -393,41 +452,35 @@
           if (id) return onResult(id);
         }
       }
-    }catch(_){ /* ignore frame errors */ }
+    }catch(_){}
 
     setTimeout(scanLoop, 100);
   }
 
-  // ===== results & modal control =====
   function onResult(id){
     handled = true;
     scanning = false;
     if (statusEl) statusEl.textContent = 'Opening ' + id + '…';
 
-    // If a page asked to handle the result, call it
     if (window.qrScanHook) {
       const cb = window.qrScanHook; window.qrScanHook = null;
-      try { cb(id); } finally { /* cb may navigate */ }
+      try { cb(id); } finally {}
       return;
     }
-
-    // Default: open the container page
     location.href = '/container/' + id;
   }
 
   function openModal(){
-    // Bring scanner above everything + hide other modals
     hideOtherModals();
     modal.style.zIndex = '5000';
-    // close any open menu
     const dd = document.getElementById('menuDropdown');
     if (dd && !dd.hidden) dd.hidden = true;
 
     modal.style.display = 'flex';
     (async () => {
       try {
-        await listCams();
-        await startCamera(cams[camIdx]?.deviceId);
+        await listCams();  // may be blank labels until after first permission
+        await startCameraPreferredBack();
       } catch (err) {
         console.warn(err);
         if (statusEl) statusEl.textContent = 'Could not start camera. Check permissions/HTTPS.';
@@ -438,25 +491,25 @@
   function closeModal(){
     handled = false;
     scanning = false;
+    torchOn = false;
     stopStream();
     modal.style.display = 'none';
     restoreHiddenModals();
     window.dispatchEvent(new Event('qr_scanner_closed'));
   }
 
-  // Export controls globally (so other code can open/close the scanner)
+  // export controls
   window.openQrScanner  = openModal;
   window.closeQrScanner = closeModal;
 
-  // Wire up open/close
+  // wire up
   openBtns.forEach(btn => btn.addEventListener('click', (e)=>{ e.preventDefault(); openModal(); }));
   closeBtn?.addEventListener('click', closeModal);
   modal?.addEventListener('click', (e)=>{ if (e.target === modal) closeModal(); });
   window.addEventListener('keydown', (e)=>{ if (e.key === 'Escape' && modal.style.display === 'flex') closeModal(); });
+  torchBtn?.addEventListener('click', toggleTorch);
 
-  // ===== Move Item integration (optional) =====
-  // If there's a QR button inside the Move Item modal with id="moveScanBtn",
-  // use the scanner to pick a destination container and submit the form.
+  // optional: example of hooking a scan button elsewhere
   if (moveScanBtn){
     moveScanBtn.addEventListener('click', (e)=>{
       e.preventDefault();
@@ -464,7 +517,6 @@
         try{
           const select = document.querySelector('#moveItemModal select[name="dest_container_id"]');
           if (select){
-            // Ensure the scanned id exists as an option; if not, add a temporary one.
             let opt = Array.from(select.options).find(o => o.value === id);
             if (!opt){
               opt = document.createElement('option');
@@ -476,9 +528,7 @@
           }
           const form = document.getElementById('moveItemForm');
           if (form) form.submit();
-        } finally {
-          closeModal(); // in case navigation is prevented, still close scanner
-        }
+        } finally { closeModal(); }
       };
       openModal();
     });

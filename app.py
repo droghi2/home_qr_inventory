@@ -17,13 +17,59 @@ from PIL import Image, ImageDraw, ImageFont
 from fastapi.responses import Response
 import io, textwrap, qrcode
 from fastapi.responses import JSONResponse
+from sys import platform as _plat
+import shutil, subprocess
 
 
-APP_TITLE = "Home QR Inventory (Typed)"
+APP_TITLE = "Home QR Inventory"
 BASE_DIR = os.path.dirname(__file__)
 DB_PATH = os.path.join(BASE_DIR, "data.sqlite3")
 QRCODES_DIR = os.path.join(BASE_DIR, "qrcodes")
 Path(QRCODES_DIR).mkdir(exist_ok=True)
+TLS_CERT_FILE = os.path.join(BASE_DIR, "cert.pem")   # keep for uvicorn
+TLS_KEY_FILE  = os.path.join(BASE_DIR, "key.pem")    # keep for uvicorn
+
+CERTS_DIR = os.path.join(BASE_DIR, "certs")
+Path(CERTS_DIR).mkdir(exist_ok=True)
+
+def _guess_mkcert_caroot() -> str | None:
+    """Return mkcert -CAROOT if found (with rootCA.pem inside)."""
+    try:
+        out = subprocess.check_output(["mkcert", "-CAROOT"], text=True).strip()
+        if os.path.exists(os.path.join(out, "rootCA.pem")):
+            return out
+    except Exception:
+        pass
+    # common fallbacks just in case
+    home = str(Path.home())
+    candidates = [
+        os.path.join(home, ".local", "share", "mkcert"),                        # Linux
+        os.path.join(home, "Library", "Application Support", "mkcert"),         # macOS
+        os.path.join(os.environ.get("LOCALAPPDATA", ""), "mkcert"),             # Windows
+    ]
+    for p in candidates:
+        if os.path.exists(os.path.join(p, "rootCA.pem")):
+            return p
+    return None
+
+def export_mkcert_root_only() -> bool:
+    """
+    Copy ONLY the mkcert root CA into ./certs so users can install/trust it.
+    Never expose the private key or your server cert.
+    """
+    caroot = _guess_mkcert_caroot()
+    if not caroot:
+        return False
+    src = os.path.join(caroot, "rootCA.pem")
+    if not os.path.exists(src):
+        return False
+    # Provide multiple extensions for easy install on different OSes
+    for name in ("rootCA.pem", "rootCA.crt", "rootCA.cer"):
+        try:
+            shutil.copyfile(src, os.path.join(CERTS_DIR, name))
+        except Exception:
+            pass
+    return True
 
 # Hard-coded base for QR (change via env if needed)
 QR_BASE_URL = os.getenv("QR_BASE_URL", "http://192.168.1.245:80000").rstrip("/")
@@ -123,7 +169,7 @@ def init_db():
     conn.commit(); conn.close()
 
 init_db()
-
+HAS_MKCERT_CA = export_mkcert_root_only()
 # FastAPI app & static
 app = FastAPI(title=APP_TITLE)
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
@@ -847,7 +893,7 @@ def move_container(cont_id: str, dest_parent_id: str = Form(...)):
     if not dest:
         conn.close(); raise HTTPException(status_code=400, detail="Destination node not found")
 
-    # Enforce typing rules: container type must be allowed under destination node type
+    # Enforce typing rules
     allowed = ALLOWED_CONTAINER_BY_PARENT.get(dest["type"], set())
     if c["type"] not in allowed:
         conn.close()
@@ -856,7 +902,9 @@ def move_container(cont_id: str, dest_parent_id: str = Form(...)):
     # Move
     cur.execute("UPDATE containers SET parent_id=? WHERE id=?", (dest_parent_id, cont_id))
     conn.commit(); conn.close()
-    return RedirectResponse(url=f"/container/{cont_id}", status_code=303)
+
+    # ⬅️ Redirect to the destination Shelf/Drawer page
+    return RedirectResponse(url=f"/node/{dest_parent_id}", status_code=303)
 
 
 @app.post("/container/{cont_id}/items/move")
@@ -912,6 +960,15 @@ async def update_item(cont_id: str, item_id: int, request: Request,
     return RedirectResponse(url=f"/container/{cont_id}", status_code=303)
 
 
+@app.get("/api/containers/{cont_id}")
+def api_container(cont_id: str):
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("SELECT id, parent_id, type, name FROM containers WHERE id=?", (cont_id,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Container not found")
+    return JSONResponse({"id": row["id"], "parent_id": row["parent_id"], "type": row["type"], "name": row["name"]})
 
 
 
@@ -1105,3 +1162,15 @@ def reorder_fields(type_id: str, payload: dict = Body(...)):
 
     conn.commit(); conn.close()
     return JSONResponse({"ok": True})
+
+
+app.mount("/certs", StaticFiles(directory=CERTS_DIR), name="certs")
+
+@app.get("/install-certificate", response_class=HTMLResponse)
+def install_certificate(request: Request):
+    return render(
+        "install_cert.html",
+        request=request,
+        has_root=HAS_MKCERT_CA,
+        title=f"{APP_TITLE} · Install certificate"
+    )

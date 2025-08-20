@@ -222,13 +222,16 @@
 
 
 <!-- Modal: Move CONTAINER -->
+<!-- Modal: Move CONTAINER -->
 <div id="moveContainerModal" class="modal modal-small">
   <div class="modal-content card">
     <div class="card-pad">
       <h2 class="kicker">Move container</h2>
-      <form action="/container/{{ cont['id'] }}/move" method="post" class="stack">
+      <!-- add id -->
+      <form id="moveContainerForm" action="/container/{{ cont['id'] }}/move" method="post" class="stack">
         <label>Destination (Shelf/Drawer)
-          <select name="dest_parent_id" required>
+          <!-- add id -->
+          <select name="dest_parent_id" id="moveDestParentSelect" required>
             {% for n in move_nodes %}
               <option value="{{ n['id'] }}">
                 {{ n['parent_name'] }}{% if n['parent_note'] %} • {{ n['parent_note'] }}{% endif %}
@@ -236,10 +239,12 @@
               </option>
             {% endfor %}
           </select>
-
-
-
         </label>
+
+        <!-- give this button a DIFFERENT id -->
+        <button type="button" class="icon-btn" id="scanDestParentBtn"
+                title="Scan location by QR" aria-label="Scan location by QR">📷</button>
+
         <div class="row" style="gap:8px; justify-content:flex-end;">
           <button type="button" class="ghost" id="cancelMoveCont">Cancel</button>
           <button class="primary" type="submit">Move</button>
@@ -248,6 +253,7 @@
     </div>
   </div>
 </div>
+
 
 <!-- Modal: Move ITEM -->
 <div id="moveItemModal" class="modal modal-small">
@@ -556,6 +562,52 @@ document.addEventListener('click', (e)=>{
   });
 </script>
 
+<script>
+(() => {
+  const btn  = document.getElementById('scanDestParentBtn');
+  const form = document.getElementById('moveContainerForm');
+  const sel  = document.getElementById('moveDestParentSelect');
+  if (!btn || !form || !sel) return;
+
+  btn.addEventListener('click', () => {
+    // When a QR is scanned, we receive the CONTAINER id.
+    // We fetch its parent shelf/drawer, set the select, and submit.
+    window.qrScanHook = async (scannedContainerId) => {
+      try {
+        const r = await fetch(`/api/containers/${scannedContainerId}`);
+        if (!r.ok) throw new Error('not-found');
+        const data = await r.json();              // { id, parent_id, ... }
+        const parentId = data.parent_id;
+        if (!parentId) throw new Error('no-parent');
+
+        let opt = sel.querySelector(`option[value="${parentId}"]`);
+        if (!opt) {
+          opt = document.createElement('option');
+          opt.value = parentId;
+          opt.textContent = `Scanned location • ${parentId}`;
+          sel.prepend(opt);
+        }
+        sel.value = parentId;
+        form.submit();
+      } catch (e) {
+        alert('Scanned container found, but could not resolve its location.');
+        console.warn(e);
+      } finally {
+        window.qrScanHook = null;
+        if (typeof window.closeQrScanner === 'function') window.closeQrScanner();
+      }
+    };
+
+    // Open the global scanner
+    if (typeof window.openQrScanner === 'function') {
+      window.openQrScanner();
+    } else {
+      document.getElementById('scanQrMenu')?.click();
+      document.getElementById('qrBtn')?.click();
+    }
+  });
+})();
+</script>
 
 
 
