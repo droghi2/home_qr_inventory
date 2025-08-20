@@ -256,8 +256,9 @@
       <h2 class="kicker">Move item</h2>
       <form id="moveItemForm" action="/container/{{ cont['id'] }}/items/move" method="post" class="stack">
         <input type="hidden" name="item_id" id="moveItemId">
-        <label>Destination container
-          <select name="dest_container_id" required>
+        <label>Destination container</label>
+        <div class="row" style="gap:8px; align-items:center;">
+          <select name="dest_container_id" id="moveDestSelect" required>
             {% for c in move_containers %}
               <option value="{{ c['id'] }}">
                 {% if c['top_name'] %}
@@ -269,9 +270,11 @@
             {% endfor %}
           </select>
 
+          <!-- QR scan button -->
+          <button type="button" class="icon-btn" id="scanDestBtn"
+                  title="Scan container QR" aria-label="Scan container QR">📷</button>
+        </div>
 
-
-        </label>
         <div class="row" style="gap:8px; justify-content:flex-end;">
           <button type="button" class="ghost" id="cancelMoveItem">Cancel</button>
           <button class="primary" type="submit">Move</button>
@@ -283,6 +286,46 @@
 
 
 
+<script>
+(() => {
+  const scanBtn   = document.getElementById('scanDestBtn');
+  const moveForm  = document.getElementById('moveItemForm');
+  const destSel   = document.getElementById('moveDestSelect');
+
+  if (!scanBtn || !moveForm || !destSel) return;
+
+  scanBtn.addEventListener('click', () => {
+    // tell the global scanner to hand the ID back here
+    window.qrScanHook = (id) => {
+      // ensure the scanned id exists in the dropdown (add a temp option if not)
+      let opt = destSel.querySelector(`option[value="${id}"]`);
+      if (!opt) {
+        opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = 'Scanned container • ' + id;
+        destSel.insertBefore(opt, destSel.firstChild);
+      }
+      destSel.value = id;
+
+      // close the scanner and clear the hook
+      if (typeof window.closeQrScanner === 'function') window.closeQrScanner();
+      window.qrScanHook = null;
+
+      // submit the move
+      moveForm.submit();
+    };
+
+    // open the global scanner modal (from the header)
+    if (typeof window.openQrScanner === 'function') {
+      window.openQrScanner();
+    } else {
+      // fallback: try clicking existing buttons that open it
+      document.getElementById('scanQrMenu')?.click();
+      document.getElementById('qrBtn')?.click();
+    }
+  });
+})();
+</script>
 
 <script>
 

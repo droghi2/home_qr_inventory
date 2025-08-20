@@ -26,10 +26,14 @@ QRCODES_DIR = os.path.join(BASE_DIR, "qrcodes")
 Path(QRCODES_DIR).mkdir(exist_ok=True)
 
 # Hard-coded base for QR (change via env if needed)
-QR_BASE_URL = os.getenv("QR_BASE_URL", "http://192.168.1.245:80").rstrip("/")
+QR_BASE_URL = os.getenv("QR_BASE_URL", "http://192.168.1.245:80000").rstrip("/")
 
-def qr_for_container(cid: str) -> str:
-    return f"{QR_BASE_URL}/container/{cid}"
+def qr_payload_for_container(cid: str) -> str:
+    # Encode only the ID (e.g., "7F3A9C1B")
+    return cid
+
+
+
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -246,11 +250,12 @@ def delete_node_recursive(conn, node_id: str):
     cur.execute("DELETE FROM nodes WHERE id=?", (node_id,))
 
 
-def build_qr_with_label_bytes(url: str, label: str) -> bytes:
-    # Crisp QR
-    qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M,
+def build_qr_with_label_bytes(payload: str, label: str) -> bytes:
+    qr = qrcode.QRCode(version=None,
+                       error_correction=qrcode.constants.ERROR_CORRECT_M,
                        box_size=10, border=4)
-    qr.add_data(url); qr.make(fit=True)
+    qr.add_data(payload)              # <— ID only
+    qr.make(fit=True)
     qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
 
     # Pick a font
@@ -334,16 +339,14 @@ def build_qr_with_label_bytes(url: str, label: str) -> bytes:
     return buf.getvalue()
 
 
-def save_qr_with_label(cid: str, label: str):
-    """Generate QR PNG with the container name centered below."""
-    url = qr_for_container(cid)
 
-    # Build QR (crisp, standard border)
-    qr = qrcode.QRCode(
-        version=None, error_correction=qrcode.constants.ERROR_CORRECT_M,
-        box_size=10, border=4
-    )
-    qr.add_data(url); qr.make(fit=True)
+def save_qr_with_label(cid: str, label: str):
+    payload = qr_payload_for_container(cid)   # <— ID only
+    qr = qrcode.QRCode(version=None,
+                       error_correction=qrcode.constants.ERROR_CORRECT_M,
+                       box_size=10, border=4)
+    qr.add_data(payload)                      # <— ID only
+    qr.make(fit=True)
     qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
 
     # Font
@@ -786,12 +789,11 @@ def container_qr_png(cont_id: str):
     if not row:
         raise HTTPException(status_code=404, detail="Container not found")
 
-    png = build_qr_with_label_bytes(qr_for_container(cont_id), row["name"])
-    return Response(
-        content=png,
-        media_type="image/png",
-        headers={"Cache-Control": "no-store, max-age=0"}  # no caching
-    )
+    payload = qr_payload_for_container(cont_id)  # <— ID only
+    png = build_qr_with_label_bytes(payload, row["name"])
+    return Response(content=png, media_type="image/png",
+                    headers={"Cache-Control": "no-store, max-age=0"})
+
 
 @app.post("/container/{cont_id}/delete")
 def delete_container(cont_id: str):

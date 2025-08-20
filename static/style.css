@@ -2437,3 +2437,48 @@ main > a.link:first-child *{ text-decoration: none !important; }
   transform: translateY(-1px);
   filter: none;
 }
+  /* show only on mobile */
+  .only-mobile{ display:none; }
+  @media (max-width:640px){
+    .only-mobile{ display:inline-grid; }
+  }
+
+  /* Reuse the blue tile look (matches your logo/menu) */
+  .tile-btn{
+    width:36px;height:36px;border-radius:10px;
+    display:grid;place-items:center;
+    background: linear-gradient(135deg,#6bb8ff 0%,#4ea1ff 45%,#3b7cff 100%);
+    color:#0b1220;border:none;
+    box-shadow:0 8px 18px rgba(78,161,255,.35),0 0 0 1px rgba(78,161,255,.35) inset;
+    transition: transform .18s ease, filter .18s ease, box-shadow .18s ease;
+  }
+  .tile-btn:hover{ transform:translateY(-1px); filter:brightness(1.05); }
+  .tile-btn:active{ transform:translateY(1px); filter:brightness(.98); }
+  .tile-btn:focus-visible{
+    outline:none;
+    box-shadow:0 0 0 3px rgba(78,161,255,.45),0 8px 18px rgba(78,161,255,.35),0 0 0 1px rgba(78,161,255,.35) inset;
+  }
+
+  /* Scanner layout */
+  .qr-video-wrap{
+    position:relative;
+    background:#000;
+    border-radius:12px;
+    overflow:hidden;
+    aspect-ratio: 3 / 4;             /* keeps a sane frame on mobile */
+  }
+  #qrVideo{
+    width:100%;height:100%;object-fit:cover;display:block;
+    background:#000;
+  }
+  .qr-guide{
+    position:absolute;inset:0;pointer-events:none;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,.25) inset;
+    border:2px solid rgba(255,255,255,.75);
+    border-radius:16px;margin:10%;
+  }
+  /* all modals */
+.modal{ position:fixed; inset:0; z-index:3000; }
+
+/* force scanner above any other modal */
+#qrScanModal{ z-index:5000; }
