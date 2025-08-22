@@ -2482,3 +2482,86 @@ main > a.link:first-child *{ text-decoration: none !important; }
 
 /* force scanner above any other modal */
 #qrScanModal{ z-index:5000; }
+
+.icon-btn img, .tile-btn img, .menu-item img { 
+  width: 1.5em; height: 1.5em; display: inline-block; 
+}
+/* Header QR button: center the icon and enlarge the touch target */
+#qrBtn{
+  display: grid;            /* perfect centering */
+  place-items: center;
+  width: 38x;              /* comfy touch target */
+  height: 38px;
+  padding: 0;               /* override any default padding */
+  line-height: 0;           /* avoid vertical misalignment */
+}
+
+/* Icon size (bigger) */
+#qrBtn img{
+  width: 20px;
+  height: 20px;
+  display: block;           /* removes extra inline spacing */
+  pointer-events: none;     /* clicks hit the button, not the img */
+}
+/* Move CONTAINER modal: make select + QR button inline & aligned */
+#moveContainerModal .dest-inline{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Let the select take the row width, the button stays snug */
+#moveContainerModal .dest-inline select{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Square button with perfectly centered PNG */
+#moveContainerModal .qr-inline-btn{
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 8px;      /* optional: matches your UI rounding */
+  line-height: 0;          /* avoid vertical misalignment */
+}
+
+/* Center the PNG inside; no stray inline spacing, clicks hit the button */
+#moveContainerModal .qr-inline-btn img{
+  width: 22px;   /* bump to 24–28 if you want it bigger */
+  height: 22px;
+  display: block;
+  pointer-events: none;
+}
+/* Shared row for select + QR button */
+.dest-inline{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+/* Let the select fill the row, button stays snug */
+.dest-inline select{
+  flex:1 1 auto;
+  min-width:0;
+}
+
+/* Square QR button with perfectly centered PNG */
+.qr-inline-btn{
+  width:44px;               /* make both modals’ QR buttons same size */
+  height:44px;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border-radius:8px;        /* match your UI rounding */
+  line-height:0;            /* avoids odd vertical alignment */
+}
+
+/* The PNG itself */
+.qr-inline-btn img{
+  width:26px;               /* bump to 28 if you want larger */
+  height:26px;
+  display:block;
+  pointer-events:none;      /* clicks hit the button, not the img */
+}

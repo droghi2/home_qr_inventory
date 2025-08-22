@@ -153,18 +153,21 @@
       <!-- Global search (always visible, submits to /) -->
       <form class="header-search" method="get" action="/" role="search" aria-label="Search">
         <input type="text" name="q" placeholder="Search containers/items…" value="{{ q or '' }}" aria-label="Search query">
-        <button class="icon-btn" title="Search" aria-label="Search">🔍</button>
+        <button class="icon-btn" title="Search" aria-label="Search">
+          <img src="/static/W_Search_Icon.png" alt="" width="22" height="22" decoding="async" draggable="false">
+        </button>
       </form>
       <!-- Mobile-only QR scan button -->
-      <button id="qrBtn" class="tile-btn only-mobile" title="Scan QR" aria-label="Scan QR">📷</button>
+      <button id="qrBtn" class="tile-btn only-mobile" title="Scan QR" aria-label="Scan QR">
+          <img src="/static/QR_Icon.png" alt="" width="22" height="22" decoding="async" draggable="false">
+      </button>
 
       <!-- Rightmost menu -->
       <div class="menu-wrap">
         <button id="menuBtn" class="icon-btn glow" title="Menu" aria-haspopup="true" aria-expanded="false">⋮</button>
         <div id="menuDropdown" class="menu-dropdown card" hidden>
           <a class="menu-item" href="/types">Item Types</a>
-          <button type="button" class="menu-item" id="scanQrMenu">Scan QR</button>
-          <a class="menu-item" href="/install-certificate">Install on phone/PC</a>
+          <a class="menu-item" href="/install-certificate">HTTPS</a>
 
         </div>
       </div>
