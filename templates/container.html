@@ -1,5 +1,22 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  /* Bigger spacing between item rows */
+  ul.list {
+    display: grid;              /* enables row-gap */
+    grid-auto-rows: min-content;
+    row-gap: 14px;              /* space BETWEEN rows */
+  }
+  ul.list > li.item-row {
+    padding-block: 14px;        /* space INSIDE each row (top/bottom) */
+  }
+
+  /* Optional: even roomier on wide screens */
+  @media (min-width: 900px){
+    ul.list { row-gap: 14px; }
+    ul.list > li.item-row { padding-block: 14px; }
+  }
+</style>
 
 <div class="section grid-2">
   <div class="col">
@@ -29,26 +46,41 @@
             <span class="pill">{{ cont['type'] }}</span>
           </div>
 
-          <div class="row" style="justify-content:space-between; align-items:center; margin-top:.3rem;">
+          <!-- TITLE + RIGHT-ACTION AREA -->
+          <div class="row" style="justify-content:space-between; align-items:flex-start; margin-top:.3rem;">
             <h2 style="margin:.3rem 0 0 0">
               {{ cont['name'] }} <span class="muted">(#{{ cont['id'] }})</span>
             </h2>
 
-            <div class="row" style="gap:8px;">
+            <!-- Right-side actions: move + vertical stack (delete above, edit below) -->
+            <div class="row" style="gap:8px; align-items:flex-start;">
+              <!-- Edit container (below) -->
+              <button class="icon-btn" id="openEditContainer" type="button"
+                      title="Edit {{ cont['type'] }}" aria-label="Edit {{ cont['type'] }}">
+                    <img class="ico" src="/static/Edit.png" alt="">
+                    </button>
               <!-- Move container -->
-              <button class="icon-btn move" id="openMoveContainer" type="button" title="Move container" aria-label="Move container">
-                ⇄
-              </button>
+              <button class="icon-btn move" id="openMoveContainer" type="button"
+                      title="Move container" aria-label="Move container">
+                    <img class="ico" src="/static/W_Move.png" alt="">
+                    </button>
 
-              <!-- Delete container -->
-              <form class="no-shrink needs-confirm"
-                    action="/container/{{ cont['id'] }}/delete"
-                    method="post"
-                    data-confirm="Delete {{ cont['type'] }} — {{ cont['name'] }} (and its items)?">
-                <button class="icon-btn danger" type="submit" aria-label="Delete {{ cont['type'] }}" title="Delete {{ cont['type'] }}">🗑️</button>
-              </form>
+              <!-- Delete & Edit stacked -->
+              <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+                <!-- Delete container (top) -->
+                <form class="no-shrink needs-confirm"
+                      action="/container/{{ cont['id'] }}/delete"
+                      method="post"
+                      data-confirm="Delete {{ cont['type'] }} — {{ cont['name'] }} (and its items)?">
+                  <button class="icon-btn danger" type="submit"
+                          aria-label="Delete {{ cont['type'] }}" title="Delete {{ cont['type'] }}">
+                        <img class="ico" src="/static/W_Delete.png" alt="">
+                        </button>
+                </form>
+              </div>
             </div>
           </div>
+
 
           {% if cont['note'] %}<div class="muted">{{ cont['note'] }}</div>{% endif %}
         </div>
@@ -60,7 +92,9 @@
     <div class="section">
       <div class="row toolbar-mini" style="justify-content:space-between;">
         <h2 class="kicker" style="margin:0">Items</h2>
-        <button type="button" class="icon-btn plus" id="addItemBtn" title="Add item">+</button>
+        <button type="button" class="icon-btn plus" id="addItemBtn" title="Add item">
+          <img class="ico" src="/static/Add.png" alt="">
+        </button>
       </div>
 
       <div class="card">
@@ -102,18 +136,24 @@
                     <button class="icon-btn move openMoveItem"
                             type="button"
                             data-item-id="{{ it['id'] }}"
-                            title="Move item" aria-label="Move item">⇄</button>
+                            title="Move item" aria-label="Move item">
+                          <img class="ico" src="/static/W_Move.png" alt="">
+                          </button>
 
                   <form class="needs-confirm"
                         action="/container/{{ cont['id'] }}/items/{{ it['id'] }}/delete"
                         method="post"
                         data-confirm="Delete this item?">
-                    <button class="icon-btn danger" title="Delete item" aria-label="Delete item">🗑️</button>
+                    <button class="icon-btn danger" title="Delete item" aria-label="Delete item">
+                      <img class="ico" src="/static/W_Delete.png" alt="">
+                    </button>
                   </form>
                   </div>
 
                   <button class="icon-btn edit-btn" type="button" title="Edit item" aria-label="Edit item"
-                          data-item-id="{{ it['id'] }}" onclick="openEditItem(this)">✎</button>
+                          data-item-id="{{ it['id'] }}" onclick="openEditItem(this)">
+                        <img class="ico" src="/static/Edit.png" alt="">
+                        </button>
                 </div>
               </li>
 
@@ -147,6 +187,33 @@
     </div>
   </aside>
 </div>
+
+
+
+
+<!-- Modal: Edit CONTAINER -->
+<div id="editContainerModal" class="modal modal-small">
+  <div class="modal-content card">
+    <div class="card-pad">
+      <h2 class="kicker">Edit {{ cont['type'] }}</h2>
+      <form action="/container/{{ cont['id'] }}/update" method="post" class="stack">
+        <label>Name
+          <input required name="name" value="{{ cont['name'] }}">
+        </label>
+        <label>Note
+          <input name="note" value="{{ cont['note'] or '' }}" placeholder="optional">
+        </label>
+        <div class="row" style="gap:8px; justify-content:flex-end;">
+          <button type="button" class="ghost" id="cancelEditContainer">Cancel</button>
+          <button class="primary" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+
 
 <!-- Modal: Add Item -->
 <div id="addItemModal" class="modal modal-small">
@@ -226,12 +293,13 @@
 <div id="moveContainerModal" class="modal modal-small">
   <div class="modal-content card">
     <div class="card-pad">
-      <h2 class="kicker">Move container</h2>
-      <!-- add id -->
+      <h2 class="kicker" style="margin:0 0 .6rem 0;">Move container</h2>
+
       <form id="moveContainerForm" action="/container/{{ cont['id'] }}/move" method="post" class="stack">
         <label class="block">Destination (Shelf/Drawer)</label>
         <div class="dest-inline">
-          <select name="dest_parent_id" id="scanDestParentBtn" required>
+          <!-- SELECT has its own id -->
+          <select name="dest_parent_id" id="destParentSelect" required>
             {% for n in move_nodes %}
               <option value="{{ n['id'] }}">
                 {{ n['parent_name'] }}{% if n['parent_note'] %} • {{ n['parent_note'] }}{% endif %}
@@ -240,16 +308,16 @@
             {% endfor %}
           </select>
 
+          <!-- QR button has a distinct id -->
           <button type="button"
                   class="icon-btn qr-inline-btn"
                   id="scanDestParentBtn"
                   title="Scan QR" aria-label="Scan QR">
-            <img src="/static/QR_Icon.png" alt="" width="26" height="26" decoding="async" draggable="false">
+            <img src="/static/W_QR_Icon.png" alt="" width="26" height="26" decoding="async" draggable="false">
           </button>
         </div>
 
-
-        <div class="row" style="gap:8px; justify-content:flex-end;">
+        <div class="row" style="gap:8px; justify-content:flex-end; margin-top:.8rem;">
           <button type="button" class="ghost" id="cancelMoveCont">Cancel</button>
           <button class="primary" type="submit">Move</button>
         </div>
@@ -259,36 +327,42 @@
 </div>
 
 
+
+
 <!-- Modal: Move ITEM -->
 <div id="moveItemModal" class="modal modal-small">
   <div class="modal-content card">
     <div class="card-pad">
-      <h2 class="kicker">Move item</h2>
+      <h2 class="kicker" style="margin:0 0 .6rem 0;">Move item</h2>
+
       <form id="moveItemForm" action="/container/{{ cont['id'] }}/items/move" method="post" class="stack">
         <input type="hidden" name="item_id" id="moveItemId">
-          <label class="block">Destination container</label>
-          <div class="dest-inline">
-            <select name="dest_container_id" id="scanDestBtn" required>
-              {% for c in move_containers %}
-                <option value="{{ c['id'] }}">
-                  {% if c['top_name'] %}
-                    {{ c['top_name'] }}{% if c['top_note'] %} • {{ c['top_note'] }}{% endif %} ›
-                  {% endif %}
-                  {{ c['parent_name'] }}{% if c['parent_note'] %} • {{ c['parent_note'] }}{% endif %} ›
-                  {{ c['type'] }} — {{ c['name'] }}{% if c['note'] %} • {{ c['note'] }}{% endif %}
-                </option>
-              {% endfor %}
-            </select>
 
-            <button type="button"
-                    class="icon-btn qr-inline-btn"
-                    id="scanDestItemBtn"
-                    title="Scan QR" aria-label="Scan QR">
-              <img src="/static/QR_Icon.png" alt="" width="26" height="26" decoding="async" draggable="false">
-            </button>
-          </div>
+        <label class="block">Destination container</label>
+        <div class="dest-inline">
+          <!-- SELECT has its own id -->
+          <select name="dest_container_id" id="destContainerSelect" required>
+            {% for c in move_containers %}
+              <option value="{{ c['id'] }}">
+                {% if c['top_name'] %}
+                  {{ c['top_name'] }}{% if c['top_note'] %} • {{ c['top_note'] }}{% endif %} ›
+                {% endif %}
+                {{ c['parent_name'] }}{% if c['parent_note'] %} • {{ c['parent_note'] }}{% endif %} ›
+                {{ c['type'] }} — {{ c['name'] }}{% if c['note'] %} • {{ c['note'] }}{% endif %}
+              </option>
+            {% endfor %}
+          </select>
 
-        <div class="row" style="gap:8px; justify-content:flex-end;">
+          <!-- QR button has a distinct id -->
+          <button type="button"
+                  class="icon-btn qr-inline-btn"
+                  id="scanDestBtn"
+                  title="Scan QR" aria-label="Scan QR">
+            <img src="/static/W_QR_Icon.png" alt="" width="26" height="26" decoding="async" draggable="false">
+          </button>
+        </div>
+
+        <div class="row" style="gap:8px; justify-content:flex-end; margin-top:.8rem;">
           <button type="button" class="ghost" id="cancelMoveItem">Cancel</button>
           <button class="primary" type="submit">Move</button>
         </div>
@@ -299,46 +373,66 @@
 
 
 
+
+
 <script>
 (() => {
-  const scanBtn   = document.getElementById('scanDestBtn');
-  const moveForm  = document.getElementById('moveItemForm');
-  const destSel   = document.getElementById('moveDestSelect');
+  const btn    = document.getElementById('openEditContainer');
+  const modal  = document.getElementById('editContainerModal');
+  const cancel = document.getElementById('cancelEditContainer');
+  if (!btn || !modal) return;
 
-  if (!scanBtn || !moveForm || !destSel) return;
+  const open  = () => { modal.style.display = 'flex'; };
+  const close = () => { modal.style.display = 'none'; };
+
+  btn.addEventListener('click', open);
+  cancel?.addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+})();
+</script>
+
+
+
+
+
+
+<script>
+  // ---- Move ITEM: scan container -> set select to that exact container -> submit
+(() => {
+  const scanBtn = document.getElementById('scanDestBtn');
+  const form    = document.getElementById('moveItemForm');
+  const sel     = document.getElementById('destContainerSelect');
+  if (!scanBtn || !form || !sel) return;
 
   scanBtn.addEventListener('click', () => {
-    // tell the global scanner to hand the ID back here
     window.qrScanHook = (id) => {
-      // ensure the scanned id exists in the dropdown (add a temp option if not)
-      let opt = destSel.querySelector(`option[value="${id}"]`);
-      if (!opt) {
-        opt = document.createElement('option');
-        opt.value = id;
-        opt.textContent = 'Scanned container • ' + id;
-        destSel.insertBefore(opt, destSel.firstChild);
+      try {
+        let opt = sel.querySelector(`option[value="${id}"]`);
+        if (!opt) {
+          opt = document.createElement('option');
+          opt.value = id;
+          opt.textContent = 'Scanned container • ' + id;
+          sel.prepend(opt);
+        }
+        sel.value = id;
+        form.submit();
+      } finally {
+        window.qrScanHook = null;
+        if (typeof window.closeQrScanner === 'function') window.closeQrScanner();
       }
-      destSel.value = id;
-
-      // close the scanner and clear the hook
-      if (typeof window.closeQrScanner === 'function') window.closeQrScanner();
-      window.qrScanHook = null;
-
-      // submit the move
-      moveForm.submit();
     };
 
-    // open the global scanner modal (from the header)
     if (typeof window.openQrScanner === 'function') {
       window.openQrScanner();
     } else {
-      // fallback: try clicking existing buttons that open it
       document.getElementById('scanQrMenu')?.click();
       document.getElementById('qrBtn')?.click();
     }
   });
 })();
 </script>
+
 
 <script>
 
@@ -571,47 +665,44 @@ document.addEventListener('click', (e)=>{
 
 <script>
 (() => {
-  const btn  = document.getElementById('scanDestParentBtn');
-  const form = document.getElementById('moveContainerForm');
-  const sel  = document.getElementById('moveDestParentSelect');
+  const btn  = document.getElementById('scanDestParentBtn');  // QR icon button
+  const form = document.getElementById('moveContainerForm');  // the move form
+  const sel  = document.getElementById('destParentSelect');   // the Shelf/Drawer <select>
   if (!btn || !form || !sel) return;
 
   btn.addEventListener('click', () => {
-    // When a QR is scanned, we receive the CONTAINER id.
-    // We fetch its parent shelf/drawer, set the select, and submit.
     window.qrScanHook = async (scannedContainerId) => {
       try {
+        // Use YOUR endpoint that already worked:
         const r = await fetch(`/api/containers/${scannedContainerId}`);
         if (!r.ok) throw new Error('not-found');
-        const data = await r.json();              // { id, parent_id, ... }
+        const data = await r.json();
+
         const parentId = data.parent_id;
         if (!parentId) throw new Error('no-parent');
 
+        // Ensure the destination node exists in the dropdown (create temp option if missing)
         let opt = sel.querySelector(`option[value="${parentId}"]`);
         if (!opt) {
           opt = document.createElement('option');
           opt.value = parentId;
-          opt.textContent = `Scanned location • ${parentId}`;
+          opt.textContent = `Location • ${parentId}`;
           sel.prepend(opt);
         }
+
         sel.value = parentId;
         form.submit();
       } catch (e) {
-        alert('Scanned container found, but could not resolve its location.');
-        console.warn(e);
+        alert('Could not resolve shelf/drawer from scanned box.');
+        console.warn('Move container scan error:', e);
       } finally {
         window.qrScanHook = null;
-        if (typeof window.closeQrScanner === 'function') window.closeQrScanner();
+        window.closeQrScanner?.();
       }
     };
 
-    // Open the global scanner
-    if (typeof window.openQrScanner === 'function') {
-      window.openQrScanner();
-    } else {
-      document.getElementById('scanQrMenu')?.click();
-      document.getElementById('qrBtn')?.click();
-    }
+    // Open your global scanner modal
+    window.openQrScanner?.();
   });
 })();
 </script>

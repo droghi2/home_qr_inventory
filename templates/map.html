@@ -38,10 +38,13 @@
 {% endif %}
 
 <!-- Top-level widget (cabinet/wardrobe tiles with counts) -->
-<div class="row" style="justify-content:space-between; align-items:center;">
-  <h2 class="kicker">Cabinets & Wardrobes</h2>
-  <button class="icon-btn plus" id="addTopBtn" title="Add top-level">+</button>
-</div>
+<div class="section" id="cabWardSection">
+  <div class="row" style="justify-content:space-between; align-items:center;">
+    <h2 class="kicker">Cabinets & Wardrobes</h2>
+    <button class="icon-btn plus" id="addTopBtn" title="Add top-level">
+      <img class="ico" src="/static/Add.png" alt="">
+    </button>
+  </div>
 
 <ul class="cards subgrid" id="topGrid" style="margin-top:.6rem">
   {% for n in top %}
@@ -51,7 +54,9 @@
         <h3 class="tile-title" style="margin:.1rem 0 0 0;">
           <a class="link" href="/node/{{ n['id'] }}">{{ n['name'] }}</a>
         </h3>
-        <button class="icon-btn plus addChildBtn" data-parent="{{ n['id'] }}" title="Add shelf/drawer">+</button>
+        <button class="icon-btn plus addChildBtn" data-parent="{{ n['id'] }}" title="Add shelf/drawer">
+          <img class="ico" src="/static/Add.png" alt="">
+        </button>
       </div>
 
       {% if n['note'] %}
@@ -71,11 +76,11 @@
   {% endfor %}
 </ul>
 
-{% if top|length > 12 %}
-  <div class="row" style="justify-content:center; margin-top:.8rem;">
-    <button class="ghost tiny" id="toggleTop">Show more</button>
-  </div>
-{% endif %}
+  {% if top|length > 12 %}
+    <div class="row" style="justify-content:center; margin-top:.8rem;">
+      <button class="ghost tiny" id="toggleTop">Show more</button>
+    </div>
+  {% endif %}
 </div>
 
 
@@ -102,6 +107,38 @@
     </div>
   </div>
 </div>
+
+
+<!-- Modal: Add Top-Level (Cabinet/Wardrobe) -->
+<div id="addTopModal" class="modal modal-small">
+  <div class="modal-content card">
+    <div class="card-pad">
+      <h2 class="kicker">New cabinet/wardrobe</h2>
+      <form action="/nodes" method="post" class="stack">
+        <!-- If your backend requires parent_id for children only, omit it here -->
+        <label>Type
+          <select name="type" required>
+            <option value="Cabinet">Cabinet</option>
+            <option value="Wardrobe">Wardrobe</option>
+          </select>
+        </label>
+        <label>Name
+          <input required name="name" placeholder="e.g., Hall cabinet">
+        </label>
+        <label>Note
+          <input name="note" placeholder="optional">
+        </label>
+        <div class="row" style="gap:8px; justify-content:flex-end;">
+          <button type="button" class="ghost" id="cancelTop">Cancel</button>
+          <button class="primary" type="submit">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+
 
 <script>
   // Filter top-level tiles

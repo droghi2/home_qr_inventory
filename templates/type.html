@@ -15,12 +15,16 @@
       <div class="row" style="justify-content:space-between; align-items:center;">
         <h2 style="margin:.3rem 0 0 0">{{ t['name'] }}</h2>
         <div class="row" style="gap:8px;">
-          <button class="icon-btn plus" id="addFieldBtn" title="Add field">+</button>
+          <button class="icon-btn plus" id="addFieldBtn" title="Add field">
+            <img class="ico" src="/static/Add.png" alt="">
+          </button>
           <form class="needs-confirm"
                 action="/types/{{ t['id'] }}/delete"
                 method="post"
                 data-confirm="Delete item type “{{ t['name'] }}” and ALL its fields? This cannot be undone.">
-            <button class="icon-btn danger" title="Delete type" aria-label="Delete type">🗑️</button>
+            <button class="icon-btn danger" title="Delete type" aria-label="Delete type">
+              <img class="ico" src="/static/W_Delete.png" alt="">
+            </button>
           </form>
 
         </div>
@@ -49,7 +53,9 @@
             <input type="hidden" name="type_id" value="{{ t['id'] }}">
             <div class="order-cell">
                 <span class="order-badge" data-order="{{ f['ord'] }}">{{ f['ord'] }}</span>
-                <button type="button" class="icon-btn drag-handle" title="Drag to reorder" aria-label="Drag to reorder">⠿</button>
+                <button type="button" class="icon-btn drag-handle" title="Drag to reorder" aria-label="Drag to reorder">
+                  <img class="ico" src="/static/Drag.png" alt="">
+                </button>
             </div>
             <label class="label">
             <span class="muted">Label</span>
@@ -78,7 +84,9 @@
             </label>
 
             <div class="actions">
-            <button class="icon-btn primary" type="submit" title="Save" aria-label="Save">💾</button>
+            <button class="icon-btn primary" type="submit" title="Save" aria-label="Save">
+              <img class="ico" src="/static/Save.png" alt="">
+            </button>
             </div>
         </form>
 
@@ -88,7 +96,9 @@
               method="post"
               data-confirm="Delete field “{{ f['label'] }}” from type “{{ t['name'] }}”?">
           <input type="hidden" name="type_id" value="{{ t['id'] }}">
-          <button class="icon-btn danger" title="Delete field" aria-label="Delete field">🗑️</button>
+          <button class="icon-btn danger" title="Delete field" aria-label="Delete field">
+            <img class="ico" src="/static/W_Delete.png" alt="">
+          </button>
         </form>
 
         </div>
@@ -510,7 +520,7 @@
           moreBtn = document.createElement('button');
           moreBtn.type = 'button';
           moreBtn.className = 'icon-btn more more-btn';
-          moreBtn.textContent = '⋯';
+          moreBtn.innerHTML = '<img src="/static/More.png" alt="">';
           moreBtn.title = 'More';
           moreBtn.setAttribute('aria-expanded','false');
           moreBtn.addEventListener('click', ()=>{

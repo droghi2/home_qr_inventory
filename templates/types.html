@@ -14,7 +14,9 @@
     <div class="card-pad">
       <div class="row" style="justify-content:space-between; align-items:center;">
         <h2 style="margin:.3rem 0 0 0">Item Types</h2>
-        <button class="icon-btn plus" id="addTypeBtn" title="Add type">+</button>
+        <button class="icon-btn plus" id="addTypeBtn" title="Add type" aria-label="Add type">
+          <img class="ico" src="/static/Add.png" alt="">
+        </button>
       </div>
     </div>
   </div>
@@ -35,14 +37,18 @@
             </h3>
           <div class="row" style="gap:8px;">
             <button class="icon-btn plus openAddField"
-                    title="Add field"
+                    title="Add field" aria-label="Add field"
                     data-type-id="{{ t['id'] }}"
-                    data-type-name="{{ t['name'] }}">+</button>
+                    data-type-name="{{ t['name'] }}">
+              <img class="ico" src="/static/Add.png" alt="">
+            </button>
           <form class="needs-confirm"
                 action="/types/{{ t['id'] }}/delete"
                 method="post"
                 data-confirm="Delete item type “{{ t['name'] }}” and ALL its fields? This cannot be undone.">
-            <button class="icon-btn danger" title="Delete type" aria-label="Delete type">🗑️</button>
+            <button class="icon-btn danger" title="Delete type" aria-label="Delete type">
+              <img class="ico" src="/static/W_Delete.png" alt="">
+            </button>
           </form>
 
           </div>

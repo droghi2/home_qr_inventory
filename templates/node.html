@@ -20,19 +20,28 @@
 
 
       {% if node['type'] in ['Cabinet','Wardrobe'] %}
-        <!-- Top-level title + trash -->
+        <!-- Top-level title + edit + trash -->
+        <!-- Top-level title + edit + trash -->
         <div class="row titlebar" style="justify-content:space-between; align-items:center; margin-top:.3rem;">
           <h2 style="margin:.3rem 0 0 0">{{ node['name'] }}</h2>
-        <!-- TOP-LEVEL (Cabinet/Wardrobe) -->
-        <form class="no-shrink needs-confirm"
-              action="/node/{{ node['id'] }}/delete"
-              method="post"
-              data-confirm="Delete {{ node['type'] }} — {{ node['name'] }} and EVERYTHING inside it? This cannot be undone.">
-          <button class="icon-btn danger" type="submit"
-                  aria-label="Delete {{ node['type'] }}" title="Delete {{ node['type'] }}">🗑️</button>
-        </form>
-        </div>
+          <div class="row" style="gap:8px;">
+            <!-- generic edit button -->
+            <button class="icon-btn" id="openEditNode" type="button"
+                    title="Edit {{ node['type'] }}" aria-label="Edit {{ node['type'] }}">
+                  <img class="ico" src="/static/Edit.png" alt="">
+                  </button>
 
+            <form class="no-shrink needs-confirm"
+                  action="/node/{{ node['id'] }}/delete"
+                  method="post"
+                  data-confirm="Delete {{ node['type'] }} — {{ node['name'] }} and EVERYTHING inside it? This cannot be undone.">
+              <button class="icon-btn danger" type="submit"
+                      aria-label="Delete {{ node['type'] }}" title="Delete {{ node['type'] }}">
+                      <img class="ico" src="/static/W_Delete.png" alt="">
+                    </button>
+            </form>
+          </div>
+        </div>
       {% elif node['type'] in ['Shelf','Drawer'] %}
         <!-- Shelf/Drawer title + trash -->
          {% if node['type'] in ['Shelf','Drawer'] and parent %}
@@ -62,16 +71,26 @@
 
         <div class="row titlebar" style="justify-content:space-between; align-items:center; margin-top:.3rem;">
           <h2 style="margin:.3rem 0 0 0">{{ node['name'] }}</h2>
-        <!-- Shelf/Drawer -->
-        <form class="no-shrink needs-confirm"
-              action="/node/{{ node['id'] }}/delete"
-              method="post"
-              data-confirm="Delete {{ node['type'] }} — {{ node['name'] }} and EVERYTHING inside it? This cannot be undone.">
-          <button class="icon-btn danger" type="submit"
-                  aria-label="Delete {{ node['type'] }}" title="Delete {{ node['type'] }}">🗑️</button>
-        </form>
 
+          <div class="row" style="gap:8px;">
+            <!-- generic edit button -->
+            <button class="icon-btn" id="openEditNode" type="button"
+                    title="Edit {{ node['type'] }}" aria-label="Edit {{ node['type'] }}">
+                  <img class="ico" src="/static/Edit.png" alt="">
+                  </button>
+
+            <form class="no-shrink needs-confirm"
+                  action="/node/{{ node['id'] }}/delete"
+                  method="post"
+                  data-confirm="Delete {{ node['type'] }} — {{ node['name'] }} and EVERYTHING inside it? This cannot be undone.">
+              <button class="icon-btn danger" type="submit"
+                      aria-label="Delete {{ node['type'] }}" title="Delete {{ node['type'] }}">
+                    <img class="ico" src="/static/W_Delete.png" alt="">
+                    </button>
+            </form>
+          </div>
         </div>
+
 
       {% else %}
         <h2 style="margin:.3rem 0 0 0">{{ node['name'] }}</h2>
@@ -84,13 +103,42 @@
   </div>
 </div>
 
+
+
+  <div id="editNodeModal" class="modal modal-small">
+    <div class="modal-content card">
+      <div class="card-pad">
+        <h2 class="kicker">Edit {{ node['type'] }}</h2>
+        <form action="/node/{{ node['id'] }}/update" method="post" class="stack">
+          <label>Name
+            <input required name="name" value="{{ node['name'] }}">
+          </label>
+          <label>Note
+            <input name="note" value="{{ node['note'] or '' }}" placeholder="optional">
+          </label>
+          <div class="row" style="gap:8px; justify-content:flex-end;">
+            <button type="button" class="ghost" id="cancelEditNode">Cancel</button>
+            <button class="primary" type="submit">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+
 {% if node['type'] in ['Cabinet','Wardrobe'] %}
 
   <!-- Top-level: compact grid + filter + show more; inline + buttons -->
   <div class="section">
     <div class="row toolbar-mini" style="justify-content:space-between;">
       <div class="kicker">Shelves & drawers</div>
-      <button class="icon-btn plus" id="addNodeBtn" title="Add shelf / drawer">+</button>
+      <button class="icon-btn plus" id="addNodeBtn" title="Add shelf / drawer">
+        <img class="ico" src="/static/Add.png" alt="">
+      </button>
     </div>
 
 
@@ -211,7 +259,9 @@
   <div class="section">
     <div class="row toolbar-mini" style="justify-content:space-between;">
       <div class="kicker">Containers here</div>
-      <button type="button" class="icon-btn plus" id="addContBtn" title="Add container">+</button>
+      <button type="button" class="icon-btn plus" id="addContBtn" title="Add container">
+        <img class="ico" src="/static/Add.png" alt="">
+      </button>
     </div>
 
     <ul class="cards subgrid" id="contGrid">
@@ -259,6 +309,10 @@
     {% endif %}
   </div>
 
+
+
+
+
   <!-- Modal: Add Container -->
   <div id="addContModal" class="modal modal-small">
     <div class="modal-content card">
@@ -292,6 +346,22 @@
 {% endif %}
 
 
+<script>
+(() => {
+  const btn    = document.getElementById('openEditNode');
+  const modal  = document.getElementById('editNodeModal');
+  const cancel = document.getElementById('cancelEditNode');
+  if (!btn || !modal) return;
+
+  const open  = () => { modal.style.display = 'flex'; };
+  const close = () => { modal.style.display = 'none'; };
+
+  btn.addEventListener('click', open);
+  cancel?.addEventListener('click', close);
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+})();
+</script>
 
 
 

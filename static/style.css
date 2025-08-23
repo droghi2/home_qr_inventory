@@ -2417,6 +2417,7 @@ main > a.link:first-child *{ text-decoration: none !important; }
 @media (min-width: 640px){
   .container main > #confirmModal + * { margin-top: 18px; }    /* tablets */
 }
+
 @media (min-width: 1024px){
   .container main > #confirmModal + * { margin-top: 24px; }    /* desktop */
 }
@@ -2565,3 +2566,676 @@ main > a.link:first-child *{ text-decoration: none !important; }
   display:block;
   pointer-events:none;      /* clicks hit the button, not the img */
 }
+
+/* Inline select + QR button row */
+.dest-inline{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Make the select height match the button nicely */
+.dest-inline select{
+  min-height: 40px;        /* looks good next to a 40×40 button */
+  padding: 8px 12px;
+}
+
+/* Uniform QR button look (shared by both modals) */
+.qr-inline-btn{
+  display: inline-grid;     /* easy centering */
+  place-items: center;      /* center the icon perfectly */
+  width: 40px;
+  height: 40px;
+  padding: 0;               /* uniform padding comes from fixed box size */
+  border-radius: 10px;
+  /* keep your existing .icon-btn visual style; this just forces size/centering */
+}
+
+/* Icon size — consistent everywhere */
+.qr-inline-btn img{
+  width: 24px;
+  height: 24px;
+  display: block;           /* remove inline whitespace wiggle */
+  pointer-events: none;     /* don’t steal the click */
+}
+/* Inline row for select + QR button (both modals) */
+.dest-inline{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+/* Make both selects similar height to the button */
+.dest-inline select{
+  min-height:40px;
+  padding:8px 12px;
+}
+
+/* Force identical, centered QR buttons */
+.qr-inline-btn{
+  display:inline-grid;      /* perfect centering */
+  place-items:center;
+  width:40px;
+  height:40px;
+  padding:0 !important;     /* override any .icon-btn padding */
+  border-radius:10px;
+  line-height:0;            /* no text baseline weirdness */
+  box-sizing:border-box;
+  vertical-align:middle;
+}
+
+/* Consistent icon size & centering */
+.qr-inline-btn img{
+  width:24px;
+  height:24px;
+  display:block;
+  pointer-events:none;      /* icon never traps clicks */
+}
+/* Let us absolutely position inside modal body */
+.modal .card .card-pad{ position: relative; }
+
+/* Top-right QR button (shared by both modals) */
+.qr-top-btn{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 10px;
+  padding: 0;                 /* uniform, no extra padding */
+  border: 1px solid var(--border, #d1d5db);
+  background: transparent;
+  display: grid;              /* perfect center */
+  place-items: center;
+  line-height: 0;
+  box-sizing: border-box;
+}
+
+/* Icon size (same on both modals) */
+.qr-top-btn img{
+  width: 26px;
+  height: 26px;
+  display: block;
+  pointer-events: none;
+}
+
+/* The row that holds a select (kept for layout) */
+.dest-inline{
+  --ctl-h: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (min-width: 641px){
+  .dest-inline{ --ctl-h: 44px; }
+}
+
+.dest-inline select{
+  height: var(--ctl-h);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #d1d5db);
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+/* Button sits top-right; identical for both modals */
+.modal .card .card-pad { position: relative; }
+
+/* Anchor absolute positioning to the popup card */
+.modal .modal-content { position: relative; overflow: visible; }
+
+/* keep title text from sitting under the button */
+#moveContainerModal .kicker,
+#moveItemModal .kicker { margin-right: 56px; }
+
+/* Anchor absolute positioning to the popup card */
+.modal .modal-content{ position: relative; overflow: visible; }
+
+/* leave space so the title doesn't sit under the button */
+#moveContainerModal .kicker,
+#moveItemModal .kicker{ margin-right: 56px; }
+
+/* identical top-right button */
+.modal .modal-content > .qr-top-btn{
+  position: absolute;
+  top: 10px;
+  right: 10px;     /* force right corner */
+  left: auto;      /* reset any inherited 'left' */
+  z-index: 10;
+
+  display: grid;
+  place-items: center;
+
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.12);
+
+  background: transparent;     /* you asked for transparent */
+  box-shadow: none;
+  cursor: pointer;
+
+  -webkit-appearance: none;   /* Safari/iOS */
+  appearance: none;           /* Standard */
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* center the PNG and make white icons visible on light backgrounds */
+.modal .modal-content > .qr-top-btn img{
+  width: 26px; height: 26px;
+  display: block;
+  pointer-events: none;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.5));
+}
+
+/* minor touch targets/offset tweaks on mobile */
+@media (max-width:640px){
+  .modal .modal-content > .qr-top-btn{
+    top: 12px;
+    right: 12px;
+  }
+}
+/* Ensure the card is the positioning context on every screen size */
+#moveContainerModal .modal-content,
+#moveItemModal .modal-content{
+  position: relative;
+  overflow: visible !important; /* so the button isn't clipped on mobile */
+}
+
+/* Leave room so the title doesn't sit under the corner button */
+#moveContainerModal .card-pad .kicker,
+#moveItemModal .card-pad .kicker{
+  padding-right: 56px;
+}
+
+/* Hard-pin the QR button to the top-right corner */
+#moveContainerModal .qr-top-btn,
+#moveItemModal .qr-top-btn{
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  left: auto !important;
+
+  z-index: 10;
+
+  display: grid !important;
+  place-items: center !important;
+
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.12);
+
+  background: transparent !important;   /* transparent on mobile & desktop */
+  box-shadow: none !important;
+
+  -webkit-appearance: none;   /* Safari/iOS */
+  appearance: none;           /* Standard */
+
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Center the PNG and make it visible on any background */
+#moveContainerModal .qr-top-btn img,
+#moveItemModal .qr-top-btn img{
+  width: 26px;
+  height: 26px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.5));
+}
+
+/* Slightly larger finger target on small screens */
+@media (max-width: 640px){
+  #moveContainerModal .qr-top-btn,
+  #moveItemModal .qr-top-btn{
+    top: 12px !important;
+    right: 12px !important;
+  }
+}
+/* Make modal-content the positioning context */
+#moveContainerModal .modal-content,
+#moveItemModal .modal-content{
+  position: relative;
+}
+
+/* One uniform top-right QR button */
+.qr-top-btn{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  z-index: 5;
+
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+
+  /* In case any older rule forces left positioning */
+  left: auto !important;
+}
+
+/* Center the PNG and make sure it shows on mobile */
+.qr-top-btn img{
+  width: 24px;
+  height: 24px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+/* Make modal content a column so the footer can sit at the bottom */
+#moveContainerModal .modal-content .card-pad,
+#moveItemModal .modal-content .card-pad{
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* Footer row: left (Cancel) and right (QR + Move) */
+.modal-actions{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;        /* pushes it to the bottom within the card */
+}
+
+/* Right side (QR + Move) as a compact inline row */
+.modal-actions .right{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Uniform QR button (transparent, centered, same size everywhere) */
+.qr-action{
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qr-action img{
+  width: 24px;
+  height: 24px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+/* Keep footer bar at the bottom of each modal */
+#moveContainerModal .modal-content .card-pad,
+#moveItemModal .modal-content .card-pad{
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.modal-actions{
+  margin-top: auto;                 /* push to bottom */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;   /* left ←→ right */
+  gap: 12px;
+}
+
+/* Groups */
+.modal-actions .left{
+  display: inline-flex;
+  align-items: center;
+}
+.modal-actions .right{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Uniform QR button (transparent, centered) */
+.qr-action{
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.qr-action img{
+  width: 24px;
+  height: 24px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+/* inline select + QR button row */
+.dest-inline{
+  display: flex;
+  align-items: center;       /* vertically center both */
+  gap: 8px;
+}
+
+/* the select fills the row; keep a reasonable touch height */
+.dest-inline select{
+  flex: 1;
+  min-height: 40px;
+}
+
+/* uniform transparent QR button */
+.qr-inline-btn{
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;       /* centers icon perfectly */
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qr-inline-btn img{
+  width: 24px;               /* icon size */
+  height: 24px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+/* === Normalize "select + QR" row in both modals === */
+.dest-inline{
+  display: flex;
+  align-items: center;
+  gap: 10px;                 /* same gap for both modals */
+}
+
+/* make the select fill the row and have the same height as the button */
+.dest-inline select{
+  flex: 1 1 auto;
+  min-height: 44px;          /* match button height */
+  padding: 10px 12px;
+  box-sizing: border-box;
+  -webkit-appearance: none;  /* iOS Safari */
+  appearance: none;
+}
+
+/* force identical square icon buttons */
+.qr-inline-btn{
+  /* override any .icon-btn defaults */
+  padding: 0 !important;
+  min-width: 0 !important;
+
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;   /* you said you want it transparent */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;            /* remove extra vertical space on mobile */
+  border-radius: 10px;       /* optional, matches your style */
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+
+/* center and size the PNG consistently */
+.qr-inline-btn img{
+  width: 26px;
+  height: 26px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* focus-visible (keyboard) */
+.qr-inline-btn:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(78,161,255,.45);
+}
+
+/* Make sure both look identical on small screens too */
+@media (max-width: 640px){
+  .dest-inline{ gap: 10px; }
+  .dest-inline select{ min-height: 44px; }
+  .qr-inline-btn{ width: 44px; height: 44px; }
+}
+/* --- Unified modal layout --- */
+.modal-head{
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-right: 56px;       /* room for the QR button */
+  margin: 0 0 .6rem 0;
+}
+
+.modal-body{ margin: .2rem 0 1rem; }
+
+.modal-actions{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* make the dropdown row consistent */
+.dest-inline{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dest-inline select{
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* top-right transparent QR button (identical in both modals) */
+.qr-head-btn{
+  position: absolute;
+  top: 10px;                 /* keeps it at top-right on mobile too */
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  line-height: 0;
+  box-sizing: border-box;
+}
+
+.qr-head-btn img{
+  width: 26px;
+  height: 26px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.qr-head-btn:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(78,161,255,.45);
+}
+
+/* mobile keeps the same placement/sizing */
+@media (max-width: 640px){
+  .dest-inline{ gap:10px; }
+  .dest-inline select{ min-height:44px; }
+  .qr-head-btn{ width:44px; height:44px; top:10px; right:10px; }
+}
+/* Inline row for select + QR */
+.dest-inline{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+/* Make both selects same height as the QR button */
+.dest-inline select{
+  flex:1 1 auto;
+  min-height:44px;
+  padding:10px 12px;
+  box-sizing:border-box;
+  -webkit-appearance:none;
+  appearance:none;
+}
+
+/* Transparent QR button that matches both modals */
+.qr-inline-btn{
+  width:44px;
+  height:44px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:10px;
+  line-height:0;
+  box-sizing:border-box;
+}
+
+.qr-inline-btn img{
+  width:26px;
+  height:26px;
+  display:block;
+  object-fit:contain;
+  pointer-events:none;
+}
+
+/* No mobile override needed—keep identical look */
+@media (max-width:640px){
+  .dest-inline{ gap:10px; }
+  .dest-inline select{ min-height:44px; }
+  .qr-inline-btn{ width:44px;height:44px; }
+}
+/* QR modal controls */
+.qr-controls{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-top:.6rem;
+}
+
+.qr-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.qr-status{
+  flex:1;
+  text-align:center;
+  color: var(--muted, #9aa7b8);
+  min-height: 1em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* pretty, centered icon buttons */
+.qr-ctl{
+  width:40px;
+  height:40px;
+  display:grid;
+  place-items:center;
+  border:none;
+  background: transparent;
+  border-radius:10px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.12) inset;
+  cursor:pointer;
+  transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+}
+
+.qr-ctl:hover{ background: rgba(255,255,255,.06); transform: translateY(-1px); }
+.qr-ctl:active{ transform: translateY(0); }
+
+.qr-ctl svg{ width:22px; height:22px; display:block; }
+
+/* small screens: keep hit-target comfy and layout tidy */
+@media (max-width: 480px){
+  .qr-ctl{ width:44px; height:44px; }
+  .qr-status{ font-size: .95rem; }
+}
+/* --- QR modal icon buttons: identical + centered --- */
+#qrScanModal #qrTorchBtn,
+#qrScanModal #qrSwitchBtn,
+#qrScanModal #qrCloseBtn{
+  display: inline-grid;      /* lets us center the icon */
+  place-items: center;       /* center the icon both axes */
+  width: 40px;               /* touch-friendly size */
+  height: 40px;
+  padding: 0;                /* no text padding */
+  background: transparent;   /* you wanted transparent */
+  border: none;              /* keep “ghost” look; add border if you like */
+  border-radius: 10px;
+  line-height: 0;            /* remove baseline quirks on mobile */
+  vertical-align: middle;
+  -webkit-appearance: none;  /* avoid mobile default styles */
+  appearance: none;
+}
+
+/* The icon itself: block + fixed size so it can center perfectly */
+#qrScanModal #qrTorchBtn img,
+#qrScanModal #qrSwitchBtn img,
+#qrScanModal #qrCloseBtn img{
+  display: block;
+  width: 22px;               /* unified icon size */
+  height: 22px;
+  object-fit: contain;
+  pointer-events: none;      /* clicks hit the button, not the img */
+}
+
+/* optional: focus ring for keyboard users */
+#qrScanModal #qrTorchBtn:focus-visible,
+#qrScanModal #qrSwitchBtn:focus-visible,
+#qrScanModal #qrCloseBtn:focus-visible{
+  outline: 2px solid rgba(78,161,255,.6);
+  outline-offset: 2px;
+}
+/* Give the Cabinets & Wardrobes section a top pad so the heading doesn't hug the previous block */
+
+
+
+/* (Optional) keep the heading from collapsing margins with the wrapper */
+#cabWardSection .kicker { margin-top: 0; }

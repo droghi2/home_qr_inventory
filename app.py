@@ -19,7 +19,7 @@ import io, textwrap, qrcode
 from fastapi.responses import JSONResponse
 from sys import platform as _plat
 import shutil, subprocess
-
+from fastapi import Form
 
 APP_TITLE = "Home QR Inventory"
 BASE_DIR = os.path.dirname(__file__)
@@ -662,7 +662,15 @@ def delete_node(node_id: str):
     # redirect home for top-level, or back to parent if Shelf/Drawer
     return RedirectResponse(url=f"/node/{parent_id}" if parent_id else "/", status_code=303)
 
-
+@app.post("/node/{node_id}/update")
+def update_node(node_id: str, name: str = Form(...), note: str = Form("")):
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("UPDATE nodes SET name=?, note=? WHERE id=?", (name.strip(), note.strip(), node_id))
+    if cur.rowcount == 0:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Node not found")
+    conn.commit(); conn.close()
+    return RedirectResponse(url=f"/node/{node_id}", status_code=303)
 
 
 # -------------- Containers --------------
@@ -971,6 +979,21 @@ def api_container(cont_id: str):
     return JSONResponse({"id": row["id"], "parent_id": row["parent_id"], "type": row["type"], "name": row["name"]})
 
 
+@app.post("/container/{cont_id}/update")
+def update_container(cont_id: str, name: str = Form(...), note: str = Form("")):
+    conn = get_db(); cur = conn.cursor()
+    cur.execute("UPDATE containers SET name=?, note=? WHERE id=?", (name.strip(), note.strip(), cont_id))
+    if cur.rowcount == 0:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Container not found")
+
+    conn.commit(); conn.close()
+
+    # Regenerate QR label image with the new name
+    save_qr_with_label(cont_id, name.strip())
+
+    # Cache-bust the image & page
+    return RedirectResponse(url=f"/container/{cont_id}?ts={int(time.time())}", status_code=303)
 
 
 
