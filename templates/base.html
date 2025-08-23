@@ -202,7 +202,9 @@
       <div id="qrScanModal" class="modal" style="display:none">
         <div class="modal-content card" style="max-width:640px;width:100%;">
           <div class="card-pad">
-            <h3 class="kicker" style="margin:0 0 .4rem 0;">Scan a QR</h3>
+            <h3 id="qrTitle" class="kicker" style="margin:0 0 .25rem 0;">Scan a QR</h3>
+            <p id="qrHelp" class="muted" style="margin:.1rem 0 .5rem 0; display:none;"></p>
+
 
             <div class="qr-video-wrap">
               <video id="qrVideo" playsinline webkit-playsinline muted autoplay></video>
@@ -297,6 +299,8 @@
   let detector = null;
   let torchOn = false;
   let _hiddenModals = [];
+  let scanCtx = { title: 'Scan a QR', help: 'Point your camera at a code…', onResult: null };
+
 
   // Race-proof shutdown / start
   let loopController = null;   // AbortController for scan loop
@@ -542,8 +546,12 @@
   function onResult(id){
     scanning = false;
     loopController?.abort();
-    if (statusEl) statusEl.textContent = 'Opening ' + id + '…';
+    if (statusEl) statusEl.textContent = 'Got code: ' + id;
 
+    if (typeof scanCtx.onResult === 'function') {
+      try { scanCtx.onResult(id); } finally { scanCtx.onResult = null; }
+      return;
+    }
     if (window.qrScanHook) {
       const cb = window.qrScanHook; window.qrScanHook = null;
       try { cb(id); } finally {}
@@ -552,7 +560,20 @@
     location.href = '/container/' + id;
   }
 
-  async function openModal(){
+
+  async function openModal(opts = {}){
+    // merge defaults
+    scanCtx.title = opts.title || 'Scan a QR';
+    scanCtx.help  = opts.help  || 'Point your camera at a code…';
+    scanCtx.onResult = typeof opts.onResult === 'function' ? opts.onResult : null;
+
+    // set UI texts
+    const titleEl = document.getElementById('qrTitle');
+    const helpEl  = document.getElementById('qrHelp');
+    if (titleEl) titleEl.textContent = scanCtx.title;
+    if (helpEl)  { helpEl.textContent = scanCtx.help; helpEl.style.display = scanCtx.help ? '' : 'none'; }
+    if (statusEl) statusEl.textContent = scanCtx.help || 'Point your camera at a code…';
+
     const myToken = ++openToken;
 
     hideOtherModals();
@@ -585,8 +606,22 @@
   }
 
   // export controls
-  window.openQrScanner  = openModal;
+  window.openQrScanner  = (opts) => openModal(opts || {});
   window.closeQrScanner = closeModal;
+
+  // handy helpers you can call anywhere:
+  window.openQrForMoveItem = (itemName) =>
+    openModal({
+      title: `Move item${itemName ? `: ${itemName}` : ''}`,
+      help:  `Scan the destination container’s QR label.`,
+    });
+
+  window.openQrForMoveContainer = (contName) =>
+    openModal({
+      title: `Move container${contName ? `: ${contName}` : ''}`,
+      help:  `Scan ANY container on the target shelf/drawer you want to move this into.`,
+    });
+
 
   // wire up
   openBtns.forEach(btn => btn.addEventListener('click', (e)=>{ e.preventDefault(); openModal(); }));

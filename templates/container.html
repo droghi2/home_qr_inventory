@@ -398,7 +398,6 @@
 
 
 <script>
-  // ---- Move ITEM: scan container -> set select to that exact container -> submit
 (() => {
   const scanBtn = document.getElementById('scanDestBtn');
   const form    = document.getElementById('moveItemForm');
@@ -406,7 +405,9 @@
   if (!scanBtn || !form || !sel) return;
 
   scanBtn.addEventListener('click', () => {
-    window.qrScanHook = (id) => {
+    // one callback used for BOTH: the new scanner (opts.onResult)
+    // and the old fallback (window.qrScanHook)
+    const onResult = (id) => {
       try {
         let opt = sel.querySelector(`option[value="${id}"]`);
         if (!opt) {
@@ -419,19 +420,23 @@
         form.submit();
       } finally {
         window.qrScanHook = null;
-        if (typeof window.closeQrScanner === 'function') window.closeQrScanner();
+        window.closeQrScanner?.();
       }
     };
 
-    if (typeof window.openQrScanner === 'function') {
-      window.openQrScanner();
-    } else {
-      document.getElementById('scanQrMenu')?.click();
-      document.getElementById('qrBtn')?.click();
-    }
+    // fallback for old scanner
+    window.qrScanHook = onResult;
+
+    // preferred: dynamic title/help (safe to call even if your scanner ignores opts)
+    window.openQrScanner?.({
+      title: 'Move item',
+      help:  'Scan the destination container’s QR label.',
+      onResult,
+    }) || document.getElementById('qrBtn')?.click(); // last-resort open
   });
 })();
 </script>
+
 
 
 <script>
@@ -665,15 +670,15 @@ document.addEventListener('click', (e)=>{
 
 <script>
 (() => {
-  const btn  = document.getElementById('scanDestParentBtn');  // QR icon button
-  const form = document.getElementById('moveContainerForm');  // the move form
-  const sel  = document.getElementById('destParentSelect');   // the Shelf/Drawer <select>
+  const btn  = document.getElementById('scanDestParentBtn');   // QR icon button in Move Container modal
+  const form = document.getElementById('moveContainerForm');   // the move form
+  const sel  = document.getElementById('destParentSelect');    // Shelf/Drawer <select>
   if (!btn || !form || !sel) return;
 
   btn.addEventListener('click', () => {
-    window.qrScanHook = async (scannedContainerId) => {
+    const onResult = async (scannedContainerId) => {
       try {
-        // Use YOUR endpoint that already worked:
+        // resolves the TARGET shelf/drawer from a scanned container already on it
         const r = await fetch(`/api/containers/${scannedContainerId}`);
         if (!r.ok) throw new Error('not-found');
         const data = await r.json();
@@ -681,7 +686,6 @@ document.addEventListener('click', (e)=>{
         const parentId = data.parent_id;
         if (!parentId) throw new Error('no-parent');
 
-        // Ensure the destination node exists in the dropdown (create temp option if missing)
         let opt = sel.querySelector(`option[value="${parentId}"]`);
         if (!opt) {
           opt = document.createElement('option');
@@ -689,11 +693,10 @@ document.addEventListener('click', (e)=>{
           opt.textContent = `Location • ${parentId}`;
           sel.prepend(opt);
         }
-
         sel.value = parentId;
         form.submit();
       } catch (e) {
-        alert('Could not resolve shelf/drawer from scanned box.');
+        alert('Could not resolve shelf/drawer from scanned code.');
         console.warn('Move container scan error:', e);
       } finally {
         window.qrScanHook = null;
@@ -701,11 +704,19 @@ document.addEventListener('click', (e)=>{
       }
     };
 
-    // Open your global scanner modal
-    window.openQrScanner?.();
+    // fallback for old scanner
+    window.qrScanHook = onResult;
+
+    // preferred: dynamic title/help (safe even if opts are ignored)
+    window.openQrScanner?.({
+      title: 'Move container — {{ cont["name"]|e }}',
+      help:  'Scan ANY container that already sits on the destination shelf/drawer.',
+      onResult,
+    }) || document.getElementById('qrBtn')?.click();
   });
 })();
 </script>
+
 
 
 
