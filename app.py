@@ -26,8 +26,8 @@ BASE_DIR = os.path.dirname(__file__)
 DB_PATH = os.path.join(BASE_DIR, "data.sqlite3")
 QRCODES_DIR = os.path.join(BASE_DIR, "qrcodes")
 Path(QRCODES_DIR).mkdir(exist_ok=True)
-TLS_CERT_FILE = os.path.join(BASE_DIR, "cert.pem")   # keep for uvicorn
-TLS_KEY_FILE  = os.path.join(BASE_DIR, "key.pem")    # keep for uvicorn
+TLS_CERT_FILE = os.path.join(BASE_DIR, "cert.pem")  
+TLS_KEY_FILE  = os.path.join(BASE_DIR, "key.pem")
 
 CERTS_DIR = os.path.join(BASE_DIR, "certs")
 Path(CERTS_DIR).mkdir(exist_ok=True)
@@ -40,7 +40,7 @@ def _guess_mkcert_caroot() -> str | None:
             return out
     except Exception:
         pass
-    # common fallbacks just in case
+    # Fallbacks
     home = str(Path.home())
     candidates = [
         os.path.join(home, ".local", "share", "mkcert"),                        # Linux
@@ -71,7 +71,7 @@ def export_mkcert_root_only() -> bool:
             pass
     return True
 
-# Hard-coded base for QR (change via env if needed)
+# Hard-coded base for QR
 QR_BASE_URL = os.getenv("QR_BASE_URL", "http://192.168.1.245:80000").rstrip("/")
 
 def qr_payload_for_container(cid: str) -> str:
@@ -127,7 +127,7 @@ def init_db():
 
 
 
-    # Item types & dynamic fields (EAV style)
+    # Item types & dynamic fields
     cur.execute("""
         CREATE TABLE IF NOT EXISTS item_types(
             id TEXT PRIMARY KEY,
@@ -184,8 +184,8 @@ ALLOWED_NODE_CHILDREN = {
     "ROOT": {"Cabinet", "Wardrobe"},
     "Cabinet": {"Shelf", "Drawer"},
     "Wardrobe": {"Shelf", "Drawer"},
-    "Shelf": set(),   # no child nodes under shelves
-    "Drawer": set(),  # no child nodes under drawers
+    "Shelf": set(), 
+    "Drawer": set(),
 }
 ALLOWED_CONTAINER_BY_PARENT = {
     "Shelf": {"Box", "Organizator", "InPlace"},
@@ -272,7 +272,7 @@ def delete_node_recursive(conn, node_id: str):
     """Delete a node and everything under it (child nodes, containers, items, QR pngs)."""
     cur = conn.cursor()
 
-    # 1) Delete containers directly under this node (safety; usually shelves/drawers hold them)
+    # 1) Delete containers directly under this node (safety; shelves/drawers hold them)
     cur.execute("SELECT id FROM containers WHERE parent_id=?", (node_id,))
     for (cid,) in cur.fetchall():
         # delete items
@@ -292,7 +292,7 @@ def delete_node_recursive(conn, node_id: str):
     for (child_id,) in cur.fetchall():
         delete_node_recursive(conn, child_id)
 
-    # 3) Finally delete this node
+    # 3) Finally delete node
     cur.execute("DELETE FROM nodes WHERE id=?", (node_id,))
 
 
@@ -356,10 +356,10 @@ def build_qr_with_label_bytes(payload: str, label: str) -> bytes:
     y_qr = pad
     canvas.paste(qr_img, (x_qr, y_qr))
 
-    # -- padding & layout (increase bottom padding) --
+    # -- padding & layout --
     pad_top = 24
-    pad_bottom = 48   # was 24; adds extra whitespace below the label
-    gap = 12          # space between QR and text
+    pad_bottom = 48
+    gap = 12
 
     out_w = max(qr_img.width + 2*pad_top, text_w + 2*pad_top)
     out_h = pad_top + qr_img.height + gap + text_h + pad_bottom
@@ -387,11 +387,11 @@ def build_qr_with_label_bytes(payload: str, label: str) -> bytes:
 
 
 def save_qr_with_label(cid: str, label: str):
-    payload = qr_payload_for_container(cid)   # <— ID only
+    payload = qr_payload_for_container(cid)
     qr = qrcode.QRCode(version=None,
                        error_correction=qrcode.constants.ERROR_CORRECT_M,
                        box_size=10, border=4)
-    qr.add_data(payload)                      # <— ID only
+    qr.add_data(payload)
     qr.make(fit=True)
     qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
 
@@ -411,8 +411,8 @@ def save_qr_with_label(cid: str, label: str):
     text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
 
     # Canvas below QR
-    pad = 24      # outer padding
-    gap = 12      # QR -> text gap
+    pad = 24
+    gap = 12
     out_w = max(qr_img.width + 2*pad, text_w + 2*pad)
     out_h = pad + qr_img.height + gap + text_h + pad
 
@@ -449,7 +449,7 @@ def map_view(request: Request, q: str | None = None):
     top = cur.fetchall()
     top_ids = [t["id"] for t in top]
 
-    # Children per top (for quick lists)
+    # Children per top
     children = {}
     for n in top:
         cur.execute("SELECT * FROM nodes WHERE parent_id=? ORDER BY type, name", (n["id"],))
@@ -484,7 +484,7 @@ def map_view(request: Request, q: str | None = None):
 
     # Global search results (containers)
     results = []
-    matched_items = {}  # cont_id -> [items...]
+    matched_items = {}
     if q:
         like = f"%{q}%"
         cur.execute("""
@@ -523,7 +523,7 @@ def map_view(request: Request, q: str | None = None):
         containers_count=containers_count,
         q=q or "",
         results=results,
-        matched_items=matched_items,   # make sure this is here
+        matched_items=matched_items,
         title=APP_TITLE
     )
 
@@ -576,7 +576,7 @@ def view_node(request: Request, node_id: str):
     containers = cur.fetchall()
 
     # NEW: items count per container (to show "Items: N" or "No items")
-    # Items count per container (robust LEFT JOIN by current node)
+    # Items count per container (LEFT JOIN by current node)
     items_count = {}
     cur.execute("""
         SELECT c.id AS cid, COUNT(i.id) AS cnt
@@ -634,9 +634,9 @@ def view_node(request: Request, node_id: str):
         parent=parent,
         subs=subs,
         containers=containers,
-        counts=counts,            # already used in your template
-        bytype=bytype,            # NEW
-        single_names=single_names,# NEW
+        counts=counts,
+        bytype=bytype,
+        single_names=single_names,
         items_count=items_count,
         title=f"{APP_TITLE} · {node['name']}"
     )
@@ -774,8 +774,8 @@ def view_container(request: Request, cont_id: str):
         items=items,
         parent=parent,
         top=top,
-        item_types=item_types,   # NEW
-        item_dyn=item_dyn,       # NEW {item_id: [{label,value}]}
+        item_types=item_types,
+        item_dyn=item_dyn,
         move_nodes=move_nodes,
         move_containers=move_containers,
         title=f"{APP_TITLE} · {cont['name']}"
@@ -843,7 +843,7 @@ def container_qr_png(cont_id: str):
     if not row:
         raise HTTPException(status_code=404, detail="Container not found")
 
-    payload = qr_payload_for_container(cont_id)  # <— ID only
+    payload = qr_payload_for_container(cont_id)
     png = build_qr_with_label_bytes(payload, row["name"])
     return Response(content=png, media_type="image/png",
                     headers={"Cache-Control": "no-store, max-age=0"})
@@ -882,7 +882,6 @@ def delete_container(cont_id: str):
 
 
 from fastapi import FastAPI, Request, Form, HTTPException
-# (already imported above)
 
 @app.post("/container/{cont_id}/move")
 def move_container(cont_id: str, dest_parent_id: str = Form(...)):
@@ -911,7 +910,7 @@ def move_container(cont_id: str, dest_parent_id: str = Form(...)):
     cur.execute("UPDATE containers SET parent_id=? WHERE id=?", (dest_parent_id, cont_id))
     conn.commit(); conn.close()
 
-    # ⬅️ Redirect to the destination Shelf/Drawer page
+    # Redirect to the destination Shelf/Drawer page
     return RedirectResponse(url=f"/node/{dest_parent_id}", status_code=303)
 
 
@@ -1075,7 +1074,6 @@ def create_field(type_id: str,
 
     conn = get_db(); cur = conn.cursor()
     fid = uuid4().hex[:8].upper()
-    # key: optional → auto from label if blank; always slugify + ensure unique
     key_in = (name or "").strip()
     base_key = slugify_label(key_in or label)
     key = ensure_unique_field_key(conn, type_id, base_key)
@@ -1099,7 +1097,7 @@ def create_field(type_id: str,
 
 
 
-# View a single type (detail page)
+# View a single type
 @app.get("/types/{type_id}", response_class=HTMLResponse)
 def type_detail(request: Request, type_id: str):
     conn = get_db(); cur = conn.cursor()
@@ -1112,7 +1110,7 @@ def type_detail(request: Request, type_id: str):
     conn.close()
     return render("type.html", request=request, t=t, fields=fields, title=f"{APP_TITLE} · {t['name']}")
 
-# (Optional) rename a type (simple)
+# Rename a type
 @app.post("/types/{type_id}/update")
 def update_type(type_id: str, name: str = Form(...)):
     conn = get_db(); cur = conn.cursor()
@@ -1135,7 +1133,7 @@ def update_field(field_id: str,
 
     conn = get_db(); cur = conn.cursor()
 
-    # compute key (optional): if blank → from label; always slugify & ensure unique (excluding self)
+    # compute key: if blank → from label; always slugify & ensure unique (excluding self)
     key_in = (name or "").strip()
     base_key = slugify_label(key_in or label)
     key = ensure_unique_field_key(conn, type_id, base_key, exclude_field_id=field_id)
