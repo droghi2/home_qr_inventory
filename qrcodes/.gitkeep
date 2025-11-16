@@ -1,0 +1,4 @@
+# The application writes generated QR code label images here, one PNG per
+# container (e.g. "<CONTAINER_ID>.png"). These files are created at runtime
+# by `save_qr_with_label()` / `build_qr_with_label_bytes()` and can always
+# be regenerated.
