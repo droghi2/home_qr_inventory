@@ -12,55 +12,43 @@
   .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; padding:0; }
   .ico { width:18px; height:18px; display:inline-block; vertical-align:middle; }
   .btn-with-icon { display:inline-flex; align-items:center; gap:8px; }
-  .icon-btn img { pointer-events:none; } /* don’t steal clicks */
-</style>
-<style>
+  .icon-btn img { pointer-events:none; }
+
   .header-inner{display:flex;align-items:center;gap:12px;padding:8px 12px}
   .brand{display:flex;align-items:center;gap:8px;min-width:0}
   .header-search{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
   .header-search input{flex:1;min-width:0}
   .header-search .icon-btn{flex:0 0 auto}
   .menu-wrap{position:relative}
-  /* Opaque dropdown (no glass) */
   .menu-dropdown{
     position: absolute;
     right: 0;
     top: calc(100% + 6px);
     min-width: 180px;
-
-    /* solid background + crisp border */
     background: #0b1220 !important;
     color: #e6eefb;
     border: 1px solid #1e293b;
     border-radius: 10px;
-
-    /* stronger shadow, no blur */
     box-shadow: 0 14px 30px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.25);
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-
     padding: 6px;
     z-index: 1000;
   }
-
   .menu-item{
     display: block;
     padding: 8px 10px;
     border-radius: 6px;
     text-decoration: none;
-    color: #e6eefb;             /* readable on dark */
+    color: #e6eefb;
   }
-
   .menu-item:hover{
-    background: rgba(255,255,255,.06); /* subtle hover on dark */
+    background: rgba(255,255,255,.06);
   }
     @media (max-width:640px){
       .header-inner{gap:8px}
       .brand div:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45vw}
     }
-</style>
-<style>
-  /* Menu button = same look as the emoji logo tile */
   #menuBtn{
     width: 36px; height: 36px; border-radius: 10px;
     display: grid; place-items: center;
@@ -87,53 +75,37 @@
       0 8px 18px rgba(78,161,255,.35),
       0 0 0 1px rgba(78,161,255,.35) inset;
   }
-</style>
-
-<style>
-  /* already have .header-inner, .brand from earlier snippet */
   @media (max-width: 640px){
     .brand > :nth-child(2){ display:none; }   /* hide the title, keep the logo */
     .header-inner{ gap: 8px; }
   }
-  /* logo container */
 .header-inner .logo{
   width: 36px; height: 36px; border-radius: 10px;
   display:grid; place-items:center;
-  /* remove the emoji tile gradient since we're showing your image now */
   background: transparent;
   box-shadow: none;
   transition: transform .18s ease, filter .18s ease;
 }
 .header-inner .logo:hover{ transform: translateY(-1px); filter: brightness(1.05); }
-
-/* make the image fit nicely */
 .header-inner .logo picture,
 .header-inner .logo img{
   width: 100%; height: 100%;
   display: block;
-  object-fit: contain;      /* preserves aspect ratio */
-  border-radius: 10px;      /* round corners if your image is square */
+  object-fit: contain;
+  border-radius: 10px;
 }
-
-/* keep your title text styling as before */
 .header-inner .brand > .brand-text{
   font-size: 1.02rem;
   color: var(--text);
   text-shadow: 0 1px 0 rgba(0,0,0,.35);
 }
-
-/* mobile: hide the brand text, show just the icon + controls */
 @media (max-width: 640px){
   .header-inner .brand > .brand-text{ display:none; }
 }
-/* make all modals layered */
 .modal{ position: fixed; inset: 0; z-index: 1000; }
-
-/* force the QR scanner to be on top of any page modal */
 #qrScanModal{ z-index: 4000; }
 
 </style>
-
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 </head>
 <body>
@@ -143,9 +115,7 @@
         <div class="brand">
           <a class="logo" href="/" aria-label="Home" title="Home">
             <picture>
-              <!-- prefer your dedicated logo first -->
               <source srcset="/static/favicon.svg" type="image/svg+xml">
-              <!-- fallback if you only have a PNG -->
               <img src="/static/logo.png"
                   alt="Home QR Inventory"
                   width="36" height="36"
@@ -168,7 +138,7 @@
           <img src="/static/QR_Icon.png" alt="" width="22" height="22" decoding="async" draggable="false">
       </button>
 
-      <!-- Rightmost menu -->
+      <!-- Right menu -->
       <div class="menu-wrap">
         <button id="menuBtn" class="icon-btn glow" title="Menu" aria-haspopup="true" aria-expanded="false">⋮</button>
         <div id="menuDropdown" class="menu-dropdown card" hidden>
@@ -252,7 +222,7 @@
   </div>
 </body>
 <script>
-/* ===== Menu dropdown (no src inside this tag) ===== */
+/* ===== Menu dropdown ===== */
 (() => {
   const wrap = document.querySelector('.menu-wrap');
   const btn  = document.getElementById('menuBtn');
@@ -275,9 +245,6 @@
     if (e.key === 'Escape') close();
   });
 })();
-</script>
-
-<script>
 (() => {
   const modal     = document.getElementById('qrScanModal');
   const video     = document.getElementById('qrVideo');
@@ -286,11 +253,10 @@
   const statusEl  = document.getElementById('qrStatus');
   const closeBtn  = document.getElementById('qrCloseBtn');
   const torchBtn  = document.getElementById('qrTorchBtn');
-  const switchBtn = document.getElementById('qrSwitchBtn');   // ← NEW (optional)
+  const switchBtn = document.getElementById('qrSwitchBtn');
 
-  // header/menu buttons (if present)
+  // header/menu buttons
   const openBtns  = [document.getElementById('qrBtn'), document.getElementById('scanQrMenu')].filter(Boolean);
-  // optional: a button inside other modals you may wire up by setting window.qrScanHook before opening
   const moveScanBtn = document.getElementById('moveScanBtn');
 
   let scanning = false;
@@ -323,7 +289,7 @@
       cams = devs.filter(d => d.kind === 'videoinput');
       if (camIdx === -1 && cams.length) camIdx = 0;
     } catch { cams = []; camIdx = -1; }
-    // Show switch button only if we have more than one camera
+    // Show switch button only if 2 or more cameras are available
     if (switchBtn) switchBtn.hidden = !(cams && cams.length > 1);
   }
 
@@ -432,7 +398,7 @@
     scanLoop(loopController.signal, myToken);
   }
 
-  // === Race-proof camera start. Prefers back camera.
+  // === Camera start. Prefers back camera.
   async function startCameraPreferredBack(myToken) {
     stopStream();
 
@@ -584,7 +550,7 @@
     modal.style.display = 'flex';
 
     try {
-      await listCams();                          // ← ensures switchBtn visibility is correct
+      await listCams();
       await startCameraPreferredBack(myToken);
     } catch (err) {
       console.warn(err);
@@ -609,7 +575,6 @@
   window.openQrScanner  = (opts) => openModal(opts || {});
   window.closeQrScanner = closeModal;
 
-  // handy helpers you can call anywhere:
   window.openQrForMoveItem = (itemName) =>
     openModal({
       title: `Move item${itemName ? `: ${itemName}` : ''}`,
@@ -655,7 +620,7 @@
   window.addEventListener('pagehide', ()=>{ if (getComputedStyle(modal).display === 'flex') closeModal(); });
   window.addEventListener('beforeunload', ()=>{ if (getComputedStyle(modal).display === 'flex') closeModal(); });
 
-  // optional: example of hooking a scan button elsewhere
+  // example of hooking a scan button elsewhere
   if (moveScanBtn){
     moveScanBtn.addEventListener('click', (e)=>{
       e.preventDefault();
@@ -681,10 +646,4 @@
   }
 })();
 </script>
-
-
-
-
-
-
 </html>

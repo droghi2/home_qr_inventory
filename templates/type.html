@@ -1,7 +1,5 @@
 {% extends "base.html" %}
 {% block content %}
-
-<!-- Back rail + header -->
 <div class="section header-row-outside">
   <a class="back-rail" href="/types" aria-label="Back" title="Back">
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -32,7 +30,6 @@
     </div>
   </div>
 </div>
-
 <!-- Fields -->
 <div class="section">
   <div class="row toolbar-mini" style="justify-content:space-between; align-items:center;">
@@ -45,10 +42,6 @@
     <li class="card field-card" data-fid="{{ f['id'] }}" draggable="true">
     <div class="card-pad">
         <div class="field-row">
-        <!-- LEFT: compact vertical stack (badge above, handle below) -->
-
-
-        <!-- MIDDLE: edit form (unchanged fields, no Order input) -->
         <form action="/fields/{{ f['id'] }}/update" method="post" class="field-grid">
             <input type="hidden" name="type_id" value="{{ t['id'] }}">
             <div class="order-cell">
@@ -89,8 +82,6 @@
             </button>
             </div>
         </form>
-
-        <!-- RIGHT: delete -->
         <form class="needs-confirm delete-cell"
               action="/fields/{{ f['id'] }}/delete"
               method="post"
@@ -148,9 +139,7 @@
     </div>
   </div>
 </div>
-
 <script>
-
 (function(){
   const modal = document.getElementById('confirmModal');
   if(!modal) return;
@@ -245,9 +234,7 @@
       dragEl = card;
       card.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
-      // FF needs data
       e.dataTransfer.setData('text/plain', card.dataset.fid);
-      // Optional: smaller ghost
       // const img = new Image(); img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAUEBA=='; e.dataTransfer.setDragImage(img, 0, 0);
     });
 
@@ -296,29 +283,25 @@
       }
     }
   })();
-
-
-</script>
-<script>
 /* ---------- Mobile (touch) drag & drop reorder via Pointer Events ---------- */
 (function(){
   const list = document.querySelector('.fields-list');
   if(!list) return;
 
-  // Only enable when device uses coarse pointer (touch) — keeps desktop DnD unchanged
+  // Only enable when device uses coarse pointer (touch)
   const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
   if (!isTouch) return;
 
   const TYPE_ID = "{{ t['id'] }}";
 
-  let dragging = null;       // the .field-card being moved
-  let placeholder = null;    // spacer element in the list
+  let dragging = null;
+  let placeholder = null;
   let startY = 0, offsetY = 0;
 
   list.addEventListener('pointerdown', (e)=>{
     const handle = e.target.closest('.drag-handle');
     if(!handle) return;
-    window._autoScrollStart && window._autoScrollStart(e.clientY);   // <— add
+    window._autoScrollStart && window._autoScrollStart(e.clientY);
     const card = handle.closest('.field-card');
     if(!card) return;
 
@@ -358,7 +341,7 @@
     if(!dragging) return;
     e.preventDefault();
 
-    window._autoScrollUpdate && window._autoScrollUpdate(e.clientY); // <— add
+    window._autoScrollUpdate && window._autoScrollUpdate(e.clientY);
 
 
     // Move the floating card
@@ -416,8 +399,6 @@
     return closest.el;
   }
 })();
-</script>
-<script>
 /* ===== Auto-scroll while reordering (desktop + mobile) ===== */
 (function(){
   const list = document.querySelector('.fields-list');
@@ -443,8 +424,8 @@
     rafId = requestAnimationFrame(step);
     if(lastClientY == null) return;
 
-    const EDGE = 80;         // px from top/bottom to start autoscroll
-    const MAX = 18;          // max px per frame (~1080px/s @60fps)
+    const EDGE = 80;
+    const MAX = 18;
 
     const rect = (scrollEl === window)
       ? { top: 0, bottom: innerHeight }
@@ -496,7 +477,6 @@
 })();
 
 
-/* Mobile: inline actions + "More" and move Delete into actions (≤640px) */
 (function(){
   const mq = window.matchMedia('(max-width: 640px)');
 
@@ -541,11 +521,11 @@
       if(deleteForm){
         if(mq.matches){
           if(deleteForm.parentElement !== actions){
-            actions.appendChild(deleteForm);        // inline with Save/More
+            actions.appendChild(deleteForm);
           }
         }else{
           if(deleteForm.parentElement !== row){
-            row.appendChild(deleteForm);            // back to row end on desktop
+            row.appendChild(deleteForm);
           }
         }
       }

@@ -1,7 +1,5 @@
 {% extends "base.html" %}
 {% block content %}
-
-<!-- Back rail + header -->
 <div class="section header-row-outside">
   <a class="back-rail" href="/" aria-label="Back" title="Back">
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -21,7 +19,6 @@
     </div>
   </div>
 </div>
-
 <!-- Types grid -->
 <div class="section">
   <ul class="cards subgrid">
@@ -29,7 +26,6 @@
     {% set fields = type_fields[t['id']] %}
     <li class="card">
       <div class="card-pad">
-
         <!-- Title row with actions -->
         <div class="row" style="justify-content:space-between; align-items:center;">
             <h3 style="margin:.2rem 0 0 0">
@@ -53,13 +49,11 @@
 
           </div>
         </div>
-
         <!-- Small badges row: count -->
         <div class="badges" style="margin-top:.35rem">
           <span class="chip accent">Fields: {{ fields|length }}</span>
         </div>
-
-        <!-- Fields as chips (no options text) -->
+        <!-- Fields as chips -->
         <div class="badges" style="margin-top:.5rem">
           {% for f in fields %}
             <span class="chip{% if loop.index > 12 %} hidden-field-{{ t['id'] }}{% endif %}">
@@ -70,7 +64,7 @@
           {% endfor %}
         </div>
 
-        <!-- Show more/less (only if many) -->
+        <!-- Show more/less -->
         {% if fields|length > 12 %}
           <div class="row" style="justify-content:center; margin-top:.6rem;">
             <button class="ghost tiny toggleFieldsBtn" data-target="{{ t['id'] }}">Show more</button>
@@ -143,13 +137,7 @@
     </div>
   </div>
 </div>
-
-
-
-
 <script>
-
-
 (function(){
   const modal = document.getElementById('confirmModal');
   if(!modal) return;

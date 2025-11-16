@@ -7,7 +7,6 @@
 
 <div class="section header-row-outside">
   <a class="back-rail" href="{{ back_href }}" aria-label="Back" title="Back">
-    <!-- crisp chevron icon -->
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M15 18L9 12l6-6" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round"/>
@@ -16,21 +15,14 @@
 
   <div class="card">
     <div class="card-pad">
-      {# ...keep your existing header content here (breadcrumb/title/trash/note)... #}
-
-
       {% if node['type'] in ['Cabinet','Wardrobe'] %}
-        <!-- Top-level title + edit + trash -->
-        <!-- Top-level title + edit + trash -->
         <div class="row titlebar" style="justify-content:space-between; align-items:center; margin-top:.3rem;">
           <h2 style="margin:.3rem 0 0 0">{{ node['name'] }}</h2>
           <div class="row" style="gap:8px;">
-            <!-- generic edit button -->
             <button class="icon-btn" id="openEditNode" type="button"
                     title="Edit {{ node['type'] }}" aria-label="Edit {{ node['type'] }}">
                   <img class="ico" src="/static/Edit.png" alt="">
                   </button>
-
             <form class="no-shrink needs-confirm"
                   action="/node/{{ node['id'] }}/delete"
                   method="post"
@@ -43,10 +35,8 @@
           </div>
         </div>
       {% elif node['type'] in ['Shelf','Drawer'] %}
-        <!-- Shelf/Drawer title + trash -->
          {% if node['type'] in ['Shelf','Drawer'] and parent %}
           <div class="badges breadcrumb-inline">
-            <!-- Parent: Wardrobe/Cabinet -->
             <a class="link crumb" href="/node/{{ parent['id'] }}">
               {{ parent['type'] }} — {{ parent['name'] }}
             </a>
@@ -55,7 +45,6 @@
               <span class="note" title="{{ parent['note'] }}">{{ parent['note'] }}</span>
             {% endif %}
             <span class="sep">›</span>
-            <!-- Current node type -->
             <span class="pill">{{ node['type'] }}</span>
           </div>
         {% else %}
@@ -71,9 +60,7 @@
 
         <div class="row titlebar" style="justify-content:space-between; align-items:center; margin-top:.3rem;">
           <h2 style="margin:.3rem 0 0 0">{{ node['name'] }}</h2>
-
           <div class="row" style="gap:8px;">
-            <!-- generic edit button -->
             <button class="icon-btn" id="openEditNode" type="button"
                     title="Edit {{ node['type'] }}" aria-label="Edit {{ node['type'] }}">
                   <img class="ico" src="/static/Edit.png" alt="">
@@ -97,14 +84,10 @@
       {% endif %}
 
 
-
       {% if node['note'] %}<div class="muted">{{ node['note'] }}</div>{% endif %}
     </div>
   </div>
 </div>
-
-
-
   <div id="editNodeModal" class="modal modal-small">
     <div class="modal-content card">
       <div class="card-pad">
@@ -124,15 +107,7 @@
       </div>
     </div>
   </div>
-
-
-
-
-
-
 {% if node['type'] in ['Cabinet','Wardrobe'] %}
-
-  <!-- Top-level: compact grid + filter + show more; inline + buttons -->
   <div class="section">
     <div class="row toolbar-mini" style="justify-content:space-between;">
       <div class="kicker">Shelves & drawers</div>
@@ -140,8 +115,6 @@
         <img class="ico" src="/static/Add.png" alt="">
       </button>
     </div>
-
-
     <!-- Shelves -->
     {% set shelves = subs | selectattr('type','equalto','Shelf') | list %}
     <div class="subsection">
@@ -165,7 +138,7 @@
             </h3>
             {% if s['note'] %}<div class="muted small-note">{{ s['note'] }}</div>{% endif %}
 
-            <!-- Row 2: chips (hide zeros) -->
+            <!-- Row 2: chips -->
             {% set b = bytype.get(s['id'], {}) if bytype else {} %}
             {% set bsum = (b.get('Box', 0) + b.get('Organizator', 0) + b.get('InPlace', 0)) %}
             <div class="badges" style="margin-top:.35rem">
@@ -184,7 +157,6 @@
         {% endif %}
       </ul>
     </div>
-
 
     <!-- Drawers -->
     {% set drawers = subs | selectattr('type','equalto','Drawer') | list %}
@@ -209,7 +181,7 @@
             </h3>
             {% if d['note'] %}<div class="muted small-note">{{ d['note'] }}</div>{% endif %}
 
-            <!-- Row 2: chips (hide zeros) -->
+            <!-- Row 2: chips -->
             {% set b = bytype.get(d['id'], {}) if bytype else {} %}
             {% set bsum = (b.get('Box', 0) + b.get('Organizator', 0) + b.get('InPlace', 0)) %}
             <div class="badges" style="margin-top:.35rem">
@@ -253,9 +225,7 @@
     </div>
   </div>
 
-
 {% elif node['type'] in ['Shelf','Drawer'] %}
-  <!-- Shelf/Drawer page: filter containers + compact tiles; inline + button -->
   <div class="section">
     <div class="row toolbar-mini" style="justify-content:space-between;">
       <div class="kicker">Containers here</div>
@@ -281,7 +251,6 @@
             {% if c['note'] %}
               <div class="muted small-note">{{ c['note'] }}</div>
             {% endif %}
-                        <!-- INSERT THIS BLOCK ↓↓↓ -->
             {% set ic = items_count.get(c['id'], 0) if items_count else 0 %}
             {% if ic > 0 %}
               <div class="badges" style="margin-top:.35rem">
@@ -290,22 +259,18 @@
             {% else %}
               <div class="muted">No items</div>
             {% endif %}
-            <!-- ↑↑↑ -->
-
           </div>
         </li>
-
-
-        
       {% else %}
       <li class="empty">No containers yet.</li>
       {% endfor %}
     </ul>
-
     {% if containers|length > 24 %}
+    
       <div class="row" style="justify-content:center; margin-top:.8rem;">
         <button class="ghost tiny" id="toggleCont">Show more</button>
       </div>
+
     {% endif %}
   </div>
 
@@ -361,15 +326,7 @@
   modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 })();
-</script>
-
-
-
-
-<script>
-
-
-
+/* ===== Generic confirm modal for destructive actions ===== */
 (function(){
   const modal = document.getElementById('confirmModal');
   if(!modal) return; // modal not present

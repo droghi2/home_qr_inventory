@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block content %}
-
 {% if q and results %}
   <div class="section">
     <h2 class="kicker">Search results</h2>
@@ -37,7 +36,7 @@
   </div>
 {% endif %}
 
-<!-- Top-level widget (cabinet/wardrobe tiles with counts) -->
+<!-- Top-level widget -->
 <div class="section" id="cabWardSection">
   <div class="row" style="justify-content:space-between; align-items:center;">
     <h2 class="kicker">Cabinets & Wardrobes</h2>
@@ -75,15 +74,12 @@
     <li class="empty">No top-level nodes. Add one below.</li>
   {% endfor %}
 </ul>
-
   {% if top|length > 12 %}
     <div class="row" style="justify-content:center; margin-top:.8rem;">
       <button class="ghost tiny" id="toggleTop">Show more</button>
     </div>
   {% endif %}
 </div>
-
-
 <!-- Modal: Add Shelf/Drawer under a specific top-level -->
 <div id="addChildModal" class="modal modal-small">
   <div class="modal-content card">
@@ -107,15 +103,12 @@
     </div>
   </div>
 </div>
-
-
 <!-- Modal: Add Top-Level (Cabinet/Wardrobe) -->
 <div id="addTopModal" class="modal modal-small">
   <div class="modal-content card">
     <div class="card-pad">
       <h2 class="kicker">New cabinet/wardrobe</h2>
       <form action="/nodes" method="post" class="stack">
-        <!-- If your backend requires parent_id for children only, omit it here -->
         <label>Type
           <select name="type" required>
             <option value="Cabinet">Cabinet</option>
@@ -137,12 +130,8 @@
   </div>
 </div>
 
-
-
-
 <script>
-  // Filter top-level tiles
- // [+] Add top-level modal
+
   const addTopBtn   = document.getElementById('addTopBtn');
   const addTopModal = document.getElementById('addTopModal');
   const cancelTop   = document.getElementById('cancelTop');
@@ -176,11 +165,9 @@
   });
   if (cancelChild){ cancelChild.addEventListener('click', ()=> addChildModal.style.display='none'); }
   if (addChildModal){ addChildModal.addEventListener('click', (e)=>{ if(e.target===addChildModal) addChildModal.style.display='none'; }); }
-
-  // Escape to close
   window.addEventListener('keydown', (e)=>{
     if(e.key==='Escape'){ if(addChildModal) addChildModal.style.display='none'; }
   });
-</script>
 
+</script>
 {% endblock %}

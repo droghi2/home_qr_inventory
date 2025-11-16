@@ -1,17 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
 <style>
-  /* Bigger spacing between item rows */
   ul.list {
-    display: grid;              /* enables row-gap */
+    display: grid;
     grid-auto-rows: min-content;
-    row-gap: 14px;              /* space BETWEEN rows */
+    row-gap: 14px;
   }
   ul.list > li.item-row {
-    padding-block: 14px;        /* space INSIDE each row (top/bottom) */
+    padding-block: 14px;
   }
 
-  /* Optional: even roomier on wide screens */
   @media (min-width: 900px){
     ul.list { row-gap: 14px; }
     ul.list > li.item-row { padding-block: 14px; }
@@ -20,8 +18,6 @@
 
 <div class="section grid-2">
   <div class="col">
-
-    <!-- Back rail + header card, aligned on the left -->
     <div class="section header-row-outside">
       <a class="back-rail" href="{% if parent %}/node/{{ parent['id'] }}{% else %}/{% endif %}" aria-label="Back" title="Back">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -29,7 +25,6 @@
                 stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </a>
-
       <div class="card">
         <div class="card-pad">
           <div class="badges breadcrumb-inline">
@@ -45,16 +40,11 @@
             {% endif %}
             <span class="pill">{{ cont['type'] }}</span>
           </div>
-
-          <!-- TITLE + RIGHT-ACTION AREA -->
           <div class="row" style="justify-content:space-between; align-items:flex-start; margin-top:.3rem;">
             <h2 style="margin:.3rem 0 0 0">
               {{ cont['name'] }} <span class="muted">(#{{ cont['id'] }})</span>
             </h2>
-
-            <!-- Right-side actions: move + vertical stack (delete above, edit below) -->
             <div class="row" style="gap:8px; align-items:flex-start;">
-              <!-- Edit container (below) -->
               <button class="icon-btn" id="openEditContainer" type="button"
                       title="Edit {{ cont['type'] }}" aria-label="Edit {{ cont['type'] }}">
                     <img class="ico" src="/static/Edit.png" alt="">
@@ -86,9 +76,6 @@
         </div>
       </div>
     </div>
-    <!-- /Back rail + header -->
-
-    <!-- Items (left column) -->
     <div class="section">
       <div class="row toolbar-mini" style="justify-content:space-between;">
         <h2 class="kicker" style="margin:0">Items</h2>
@@ -128,9 +115,7 @@
                   </div>
 
                   {% endif %}
-                </div>  <!-- ← close .item-main here -->
-
-                <!-- Actions must be a sibling so they can live top-right -->
+                </div>
                 <div class="item-actions">
                   <div class="actions-top">
                     <button class="icon-btn move openMoveItem"
@@ -168,7 +153,7 @@
 
   </div>
 
-  <!-- QR (right column) -->
+  <!-- QR -->
   <aside class="col">
     <div class="section">
       <div class="card sticky">
@@ -283,12 +268,6 @@
     </div>
   </div>
 </div>
-
-
-
-
-
-<!-- Modal: Move CONTAINER -->
 <!-- Modal: Move CONTAINER -->
 <div id="moveContainerModal" class="modal modal-small">
   <div class="modal-content card">
@@ -307,7 +286,6 @@
               </option>
             {% endfor %}
           </select>
-
           <!-- QR button has a distinct id -->
           <button type="button"
                   class="icon-btn qr-inline-btn"
@@ -325,9 +303,6 @@
     </div>
   </div>
 </div>
-
-
-
 
 <!-- Modal: Move ITEM -->
 <div id="moveItemModal" class="modal modal-small">
@@ -371,10 +346,6 @@
   </div>
 </div>
 
-
-
-
-
 <script>
 (() => {
   const btn    = document.getElementById('openEditContainer');
@@ -390,14 +361,7 @@
   modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
 })();
-</script>
 
-
-
-
-
-
-<script>
 (() => {
   const scanBtn = document.getElementById('scanDestBtn');
   const form    = document.getElementById('moveItemForm');
@@ -405,8 +369,7 @@
   if (!scanBtn || !form || !sel) return;
 
   scanBtn.addEventListener('click', () => {
-    // one callback used for BOTH: the new scanner (opts.onResult)
-    // and the old fallback (window.qrScanHook)
+    // callback used for (opts.onResult)
     const onResult = (id) => {
       try {
         let opt = sel.querySelector(`option[value="${id}"]`);
@@ -423,23 +386,17 @@
         window.closeQrScanner?.();
       }
     };
-
-    // fallback for old scanner
     window.qrScanHook = onResult;
 
-    // preferred: dynamic title/help (safe to call even if your scanner ignores opts)
+    // dynamic title/help (safe to call even if your scanner ignores opts)
     window.openQrScanner?.({
       title: 'Move item',
       help:  'Scan the destination container’s QR label.',
       onResult,
-    }) || document.getElementById('qrBtn')?.click(); // last-resort open
+    }) || document.getElementById('qrBtn')?.click();
   });
 })();
-</script>
 
-
-
-<script>
 
 (function(){
   const modal   = document.getElementById('confirmModal');
@@ -460,7 +417,6 @@
 
   okBtn.addEventListener('click', ()=>{
     if(pendingForm){
-      // programmatic submit bypasses our listener
       pendingForm.submit();
       pendingForm = null;
     }
@@ -478,7 +434,6 @@
     }, { capture:true });
   });
 
-  // ESC to close
   window.addEventListener('keydown', (e)=>{ if(e.key==='Escape') close(); });
 })();
 
@@ -506,8 +461,6 @@ document.addEventListener('click', (e)=>{
     btn.innerHTML = `⋯ <span class="more-count">+${hidden}</span>`;
   }
 });
-
-
 
     // === MOVE CONTAINER modal ===
   (function(){
@@ -659,16 +612,13 @@ document.addEventListener('click', (e)=>{
     });
   }
 
-  // Esc closes modals
   window.addEventListener('keydown', (e)=>{
     if(e.key==='Escape'){
       if(addItemModal) addItemModal.style.display='none';
       if(editItemModal) editItemModal.style.display='none';
     }
   });
-</script>
 
-<script>
 (() => {
   const btn  = document.getElementById('scanDestParentBtn');   // QR icon button in Move Container modal
   const form = document.getElementById('moveContainerForm');   // the move form
@@ -704,10 +654,9 @@ document.addEventListener('click', (e)=>{
       }
     };
 
-    // fallback for old scanner
     window.qrScanHook = onResult;
 
-    // preferred: dynamic title/help (safe even if opts are ignored)
+    // dynamic title/help (safe even if opts are ignored)
     window.openQrScanner?.({
       title: 'Move container — {{ cont["name"]|e }}',
       help:  'Scan ANY container that already sits on the destination shelf/drawer.',
