@@ -2,7 +2,6 @@ __pycache__/
 *.pyc
 *.pem
 data.sqlite3
-qrcodes/
 certs/rootCA.pem
 certs/rootCA.crt
 certs/rootCA.cer
