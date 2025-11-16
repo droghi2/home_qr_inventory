@@ -3,5 +3,5 @@
 # so it can be served via the `/certs` static route and downloaded from the
 # browser.
 #
-# Only the public mkcert root CA should ever be placed here so users can
-# install/trust it on their devices.
+# ! Only the public mkcert root CA should ever be placed here so users can !
+# ! install/trust it on their devices. !
