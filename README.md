@@ -1,3 +1,7 @@
+<p align="right">
+  <img src="static/favicon.svg" alt="Home QR Inventory Logo" width="80">
+</p>
+
 # Home QR Inventory
 
 **Home QR Inventory** is a self-hosted, network-local inventory management application designed for structured storage environments. It models physical space as a hierarchical graph of:
@@ -13,8 +17,18 @@ All core subsystems—**database schema initialization**, **QR code generation**
 
 ---
 
-
 ## Key Features
+
+<table>
+  <tr>
+    <td>
+      <img src="misc/homeqr.gif" alt="Desktop demo of Home QR Inventory">
+    </td>
+    <td align="right" valign="top">
+      <img src="misc/homeqrmobile.gif" alt="Mobile demo of Home QR Inventory" width="180">
+    </td>
+  </tr>
+</table>
 
 - **Typed storage hierarchy**
   - Nodes: `Cabinet`, `Wardrobe`, `Shelf`, `Drawer`
@@ -59,7 +73,7 @@ All core subsystems—**database schema initialization**, **QR code generation**
 - Python 3.10+
 - Optional: [`mkcert`](https://github.com/FiloSottile/mkcert) if you plan to use local HTTPS with a trusted root CA
 
-### 1.2 Clone and install
+### 1.2a Clone and install
 
 ```bash
 git clone https://github.com/droghi2/home_qr_inventory.git
@@ -72,6 +86,36 @@ pip install -r requirements.txt
 ```
 
 ---
+
+### 1.2b Docker Compose Deployment
+
+Example `docker-compose.yml` for running Home QR Inventory with HTTPS:
+
+```yaml
+services:
+  HomeQRinv:
+    restart: unless-stopped
+    image: python:3.12-slim
+    working_dir: /home/app
+    volumes:
+      # Map your application directory from the host into the container
+      - /app:/home/app
+    command: >
+      sh -c "
+        pip install -r requirements.txt &&
+        uvicorn app:app --host 0.0.0.0 --port 8443 --ssl-keyfile key.pem --ssl-certfile cert.pem
+      "
+    ports:
+      - "8443:8443"
+networks: {}
+```
+
+> ⚠️ **Volume layout requirement**
+>
+> The host directory you mount into the container (in the example:`/app`) **must contain the repository files at its root**    
+> Docker maps this directory to `/home/app` inside the container,
+> and the startup command expects to run from that path. If you mount a parent folder or a different structure,
+> the commands will fail.
 
 ## Browser Camera Access (HTTPS Requirement)
 
