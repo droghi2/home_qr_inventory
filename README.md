@@ -2,6 +2,7 @@
   <img src="static/favicon.svg" alt="Home QR Inventory Logo" width="80">
 </p>
 
+
 # Home QR Inventory
 
 **Home QR Inventory** is a self-hosted, network-local inventory management application designed for structured storage environments. It models physical space as a hierarchical graph of:
